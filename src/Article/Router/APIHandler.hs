@@ -49,9 +49,10 @@ import           Article
 import           Article.Router.Helper
 import           Article.UserEnv           (ActionM, UserEnv (..))
 import           Article.Utils             (getImageShape)
-import           Dispatch.Types.ListResult (ListResult (..), fromListResult)
+import           Dispatch.Types.ListResult (ListResult (getResult), merge)
 import           Dispatch.Utils.JSON       (differenceValue, unionValue)
-import           Dispatch.Utils.Scotty     (errBadRequest, errNotFound, ok)
+import           Dispatch.Utils.Scotty     (errBadRequest, errNotFound, ok,
+                                            okListResult)
 
 getMineType :: T.Text -> (String, String)
 getMineType =
@@ -308,12 +309,7 @@ resultArticle :: ListResult Article -> ActionM ()
 resultArticle result = do
   isCard <- safeParam "card" ("" :: String)
 
-  if null isCard then
-                 json . fromListResult "articles" $ result
-  else do
-    cards <- lift $ mapM toCardItem $ getResult result
-    json . fromListResult "cards" $ ListResult { getFrom   = getFrom result
-                                               , getSize   = getSize result
-                                               , getTotal  = getTotal result
-                                               , getResult = cards
-                                               }
+  if null isCard then okListResult "articles" result
+                 else do
+                      cards <- lift $ mapM toCardItem $ getResult result
+                      okListResult "cards" $ merge cards result
