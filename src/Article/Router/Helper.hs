@@ -3,7 +3,6 @@ module Article.Router.Helper
   (
     safeParam
   , pageParam
-  , runArticle
   , runWithEnv
   , withTransaction
   , timeline
@@ -41,9 +40,6 @@ pageParam = do
   size <- safeParam "size" 10
   return (max ((page - 1) * size) from, size)
 
-runArticle :: ArticleM a -> ActionM a
-runArticle = lift
-
 runWithEnv :: ArticleM a -> ArticleM a
 runWithEnv act = do
   state <- env states
@@ -60,7 +56,7 @@ withTransaction act = do
     MySQL.withTransaction conn $ runHaxl env0 act
 
 timelineMeta :: String -> ActionM (Maybe (Title, Summary))
-timelineMeta = runArticle . getTimelineMeta
+timelineMeta = lift . getTimelineMeta
 
 timelineTitle :: String -> ActionM Title
 timelineTitle name = maybe name fst <$> timelineMeta name
@@ -83,7 +79,7 @@ flip' f = g
 articles' :: (From -> Size -> ArticleM [Article]) -> ArticleM Int64 -> ActionM (ListResult Article)
 articles' s t = do
   (from, size) <- pageParam
-  runArticle $ do
+  lift $ do
     arts <- s from size
     total <- t
 
@@ -96,7 +92,7 @@ articles' s t = do
 article :: ActionM (Maybe Article)
 article = do
   aid <- param "art_id"
-  runArticle $ getArticleById aid
+  lift $ getArticleById aid
 
 resultOK :: ActionM ()
 resultOK = json $ object ["result" .= T.pack "OK"]

@@ -92,7 +92,7 @@ uploadAPIHandler = do
                 Left _       -> Nothing
                 Right shape' -> shape'
 
-  fileObj <- runArticle $ uploadFileWithExtra path wb (getFileExtra fn wb shape)
+  fileObj <- lift $ uploadFileWithExtra path wb (getFileExtra fn wb shape)
   json fileObj
 
 createArticleAPIHandler :: ActionM ()
@@ -103,7 +103,7 @@ createArticleAPIHandler = do
   from_url  <- param "from_url"
   ct <- param "created_at"
 
-  result <- runArticle $ createArticleAndFetch title summary content from_url ct
+  result <- lift $ createArticleAndFetch title summary content from_url ct
 
   json $ object ["article" .= result]
 
@@ -115,7 +115,7 @@ updateArticleAPIHandler = hasArticle $ \_ -> do
   summary <- safeParam "summary" ""
   content <- safeParam "content" (""::T.Text)
 
-  art2 <- runArticle $ do
+  art2 <- lift $ do
     void $ if (not . null) title && (not . null) summary && T.length content > 0 then
       updateArticle artId title summary content
     else do
@@ -130,10 +130,10 @@ updateArticleAPIHandler = hasArticle $ \_ -> do
 updateArticleCoverAPIHandler :: ActionM ()
 updateArticleCoverAPIHandler = hasArticle $ \art -> do
   fileId <- param "file_id"
-  file <- runArticle $ getFileById fileId
+  file <- lift $ getFileById fileId
   case file of
     Just _ -> do
-      void . runArticle $ updateArticleCover (artID art) file
+      void . lift $ updateArticleCover (artID art) file
       resultOK
     Nothing -> do
       status status404
@@ -141,7 +141,7 @@ updateArticleCoverAPIHandler = hasArticle $ \art -> do
 
 removeArticleCoverAPIHandler :: ActionM ()
 removeArticleCoverAPIHandler = hasArticle $ \art -> do
-  void . runArticle $ updateArticleCover (artID art) Nothing
+  void . lift $ updateArticleCover (artID art) Nothing
   resultOK
 
 updateArticleExtraAPIHandler :: ActionM ()
@@ -149,7 +149,7 @@ updateArticleExtraAPIHandler = hasArticle $ \art -> do
   extra <- param "extra"
   case decode extra :: Maybe Value of
     Just ev -> do
-      void . runArticle $ updateArticleExtra (artID art) $ unionExtraValue ev (artExtra art)
+      void . lift $ updateArticleExtra (artID art) $ unionExtraValue ev (artExtra art)
       resultOK
     Nothing -> do
       status status400
@@ -160,7 +160,7 @@ removeArticleExtraAPIHandler = hasArticle $ \art -> do
   extra <- param "extra"
   case decode extra :: Maybe Value of
     Just ev -> do
-      void . runArticle $ updateArticleExtra (artID art) $ differenceExtraValue (artExtra art) ev
+      void . lift $ updateArticleExtra (artID art) $ differenceExtraValue (artExtra art) ev
       resultOK
     Nothing -> do
       status status400
@@ -168,7 +168,7 @@ removeArticleExtraAPIHandler = hasArticle $ \art -> do
 
 clearArticleExtraAPIHandler :: ActionM ()
 clearArticleExtraAPIHandler = hasArticle $ \art -> do
-  void . runArticle $ updateArticleExtra (artID art) Null
+  void . lift $ updateArticleExtra (artID art) Null
   resultOK
 
 unionExtraValue :: Value -> Value -> Value
@@ -186,7 +186,7 @@ removeArticleAPIHandler :: ActionM ()
 removeArticleAPIHandler = do
   artId   <- param "art_id"
 
-  runArticle $ withTransaction $ do
+  lift $ withTransaction $ do
     void $ removeArticle artId
     void $ removeAllArticleTag artId
     void $ removeAllTimelineByArtId artId
@@ -202,7 +202,7 @@ hasArticle :: (Article -> ActionM ()) -> ActionM ()
 hasArticle action = do
   artId <- param "art_id"
 
-  art <- runArticle $ getArticleById artId
+  art <- lift $ getArticleById artId
   maybe (notFound artId) action art
   where notFound artId = do
           status status404
@@ -212,7 +212,7 @@ existsArticleAPIHandler :: ActionM ()
 existsArticleAPIHandler = do
   fromURL <- param "from_url"
 
-  art <- runArticle $ existsArticle fromURL
+  art <- lift $ existsArticle fromURL
 
   json $ object ["id" .= fromMaybe 0 art]
 
@@ -225,7 +225,7 @@ getAllArticleAPIHandler = do
 createTagAPIHandler :: ActionM ()
 createTagAPIHandler = do
   name <- param "tag"
-  tag <- runArticle $ do
+  tag <- lift $ do
     t <- getTagByName name
     if isJust t then return t
     else do
@@ -242,7 +242,7 @@ hasTag action = do
   tid <- safeParam "tag_id" (0::ID)
   name <- safeParam "tag" (""::String)
 
-  tag <- runArticle $
+  tag <- lift $
     if tid > 0 then getTagById tid
     else getTagByName name
 
@@ -254,7 +254,7 @@ hasTag action = do
 addArticleTagAPIHandler :: ActionM ()
 addArticleTagAPIHandler = hasTag $ \tag ->
   hasArticle $ \art -> do
-    runArticle $ do
+    lift $ do
       void $ addArticleTag (artID art) (tagID tag)
 
     resultOK
@@ -262,7 +262,7 @@ addArticleTagAPIHandler = hasTag $ \tag ->
 removeArticleTagAPIHandler :: ActionM ()
 removeArticleTagAPIHandler = hasTag $ \tag ->
   hasArticle $ \art -> do
-    runArticle $ do
+    lift $ do
       void $ removeArticleTag (artID art) (tagID tag)
 
     resultOK
@@ -272,14 +272,14 @@ updateTagAPIHandler = do
   tid <- param "tag_id"
   name <- param "tag"
 
-  oldtag <- runArticle $ getTagById tid
+  oldtag <- lift $ getTagById tid
   if isJust oldtag then do
-    tag2 <- runArticle $ getTagByName name
+    tag2 <- lift $ getTagByName name
     if isJust tag2 then do
       status status400
       json $ object ["err" .= T.pack "bad request" ]
     else do
-      void . runArticle $ updateTag tid name
+      void . lift $ updateTag tid name
       resultOK
   else do
     status status404
@@ -289,7 +289,7 @@ createTimelineAPIHandler :: ActionM ()
 createTimelineAPIHandler =  hasArticle $ \art -> do
   name <- param "timeline"
 
-  runArticle $ do
+  lift $ do
     void $ addTimeline name $ artID art
 
   resultOK
@@ -298,7 +298,7 @@ removeTimelineAPIHandler :: ActionM ()
 removeTimelineAPIHandler =  hasArticle $ \art -> do
   name <- param "timeline"
 
-  runArticle $ do
+  lift $ do
     void $ removeTimeline name $ artID art
 
   resultOK
@@ -315,14 +315,14 @@ saveTimelineMetaAPIHandler = do
   name <- param "timeline"
   title <- safeParam "title" ""
   summary <- safeParam "summary" ""
-  void . runArticle $ saveTimelineMeta name title summary
+  void . lift $ saveTimelineMeta name title summary
 
   resultOK
 
 removeTimelineMetaAPIHandler :: ActionM ()
 removeTimelineMetaAPIHandler = do
   name <- param "timeline"
-  void . runArticle $ removeTimelineMeta name
+  void . lift $ removeTimelineMeta name
 
   resultOK
 
@@ -333,7 +333,7 @@ resultArticle result = do
   if null isCard then
                  json . fromListResult "articles" $ result
   else do
-    cards <- runArticle $ mapM toCardItem $ getResult result
+    cards <- lift $ mapM toCardItem $ getResult result
     json . fromListResult "cards" $ ListResult { getFrom   = getFrom result
                                                , getSize   = getSize result
                                                , getTotal  = getTotal result
