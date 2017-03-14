@@ -51,7 +51,7 @@ import           Article.UserEnv           (ActionM, UserEnv (..))
 import           Article.Utils             (getImageShape)
 import           Dispatch.Types.ListResult (ListResult (..), fromListResult)
 import           Dispatch.Utils.JSON       (differenceValue, unionValue)
-import           Dispatch.Utils.Scotty     (errBadRequest, errNotFound)
+import           Dispatch.Utils.Scotty     (errBadRequest, errNotFound, ok)
 
 getMineType :: T.Text -> (String, String)
 getMineType =
@@ -106,8 +106,7 @@ createArticleAPIHandler = do
 
   result <- lift $ createArticleAndFetch title summary content from_url ct
 
-  json $ object ["article" .= result]
-
+  ok "article" result
 
 updateArticleAPIHandler :: ActionM ()
 updateArticleAPIHandler = hasArticle $ \_ -> do
@@ -126,7 +125,7 @@ updateArticleAPIHandler = hasArticle $ \_ -> do
       return (changed1 + changed2 + changed3)
     runWithEnv $ getArticleById artId
 
-  json $ object [ "article" .= art2 ]
+  ok "article" art2
 
 updateArticleCoverAPIHandler :: ActionM ()
 updateArticleCoverAPIHandler = hasArticle $ \art -> do
@@ -181,8 +180,7 @@ removeArticleAPIHandler = do
 
 
 getArticleAPIHandler :: ActionM ()
-getArticleAPIHandler = hasArticle $ \art -> do
-  json $ object ["article" .= art]
+getArticleAPIHandler = hasArticle $ ok "article"
 
 hasArticle :: (Article -> ActionM ()) -> ActionM ()
 hasArticle action = do
@@ -199,7 +197,7 @@ existsArticleAPIHandler = do
 
   art <- lift $ existsArticle fromURL
 
-  json $ object ["id" .= fromMaybe 0 art]
+  ok "id" $ fromMaybe 0 art
 
 
 getAllArticleAPIHandler :: ActionM ()
@@ -217,10 +215,10 @@ createTagAPIHandler = do
       tid <- addTag name
       getTagById tid
 
-  json $ object ["tag" .= tag]
+  ok "tag" tag
 
 getTagAPIHandler :: ActionM ()
-getTagAPIHandler = hasTag $ \tag -> json $ object ["tag" .= tag]
+getTagAPIHandler = hasTag $ ok "tag"
 
 hasTag :: (Tag -> ActionM ()) -> ActionM ()
 hasTag action = do

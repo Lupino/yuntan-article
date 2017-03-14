@@ -96,4 +96,4 @@ article = do
   lift $ getArticleById aid
 
 resultOK :: ActionM ()
-resultOK = ok "OK"
+resultOK = ok "result" ("OK" :: Text)
