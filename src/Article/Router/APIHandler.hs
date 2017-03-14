@@ -33,7 +33,6 @@ import           Control.Monad.Reader      (lift)
 import           Haxl.Core                 (Env (..), env)
 
 import           Data.Aeson                (Value (..), decode, object, (.=))
-import           Data.HashMap.Strict       (difference, union)
 import           Data.Map                  as Map (lookup)
 import           Data.Maybe                (fromJust, fromMaybe, isJust)
 import           Network.HTTP.Types        (status400, status404)
@@ -51,6 +50,7 @@ import           Article.Router.Helper
 import           Article.UserEnv           (ActionM, UserEnv (..))
 import           Article.Utils             (getImageShape)
 import           Dispatch.Types.ListResult (ListResult (..), fromListResult)
+import           Dispatch.Utils.JSON       (differenceValue, unionValue)
 import           Dispatch.Utils.Scotty     (errBadRequest, errNotFound)
 
 getMineType :: T.Text -> (String, String)
@@ -150,7 +150,7 @@ updateArticleExtraAPIHandler = hasArticle $ \art -> do
   case decode extra :: Maybe Value of
     Nothing -> errBadRequest "extra field is required."
     Just ev -> do
-      void . lift $ updateArticleExtra (artID art) $ unionExtraValue ev (artExtra art)
+      void . lift $ updateArticleExtra (artID art) $ unionValue ev (artExtra art)
       resultOK
 
 
@@ -160,24 +160,13 @@ removeArticleExtraAPIHandler = hasArticle $ \art -> do
   case decode extra :: Maybe Value of
     Nothing -> errBadRequest "extra field is required."
     Just ev -> do
-      void . lift $ updateArticleExtra (artID art) $ differenceExtraValue (artExtra art) ev
+      void . lift $ updateArticleExtra (artID art) $ differenceValue (artExtra art) ev
       resultOK
 
 clearArticleExtraAPIHandler :: ActionM ()
 clearArticleExtraAPIHandler = hasArticle $ \art -> do
   void . lift $ updateArticleExtra (artID art) Null
   resultOK
-
-unionExtraValue :: Value -> Value -> Value
-unionExtraValue (Object a) (Object b) = Object $ union a b
-unionExtraValue (Object a) _          = Object a
-unionExtraValue _ (Object b)          = Object b
-unionExtraValue _ _                   = Null
-
-differenceExtraValue :: Value -> Value -> Value
-differenceExtraValue (Object a) (Object b) = Object $ difference a b
-differenceExtraValue (Object a) _          = Object a
-differenceExtraValue _ _                   = Null
 
 removeArticleAPIHandler :: ActionM ()
 removeArticleAPIHandler = do
