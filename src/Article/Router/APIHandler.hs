@@ -51,6 +51,7 @@ import           Article.Router.Helper
 import           Article.UserEnv           (ActionM, UserEnv (..))
 import           Article.Utils             (getImageShape)
 import           Dispatch.Types.ListResult (ListResult (..), fromListResult)
+import           Dispatch.Utils.Scotty     (errBadRequest, errNotFound)
 
 getMineType :: T.Text -> (String, String)
 getMineType =
@@ -135,9 +136,8 @@ updateArticleCoverAPIHandler = hasArticle $ \art -> do
     Just _ -> do
       void . lift $ updateArticleCover (artID art) file
       resultOK
-    Nothing -> do
-      status status404
-      json $ object [ "err" .= mconcat ["File (", T.pack $ show fileId, ") not found." ] ]
+
+    Nothing -> errNotFound $ concat [ "File (", show fileId, ") not found." ]
 
 removeArticleCoverAPIHandler :: ActionM ()
 removeArticleCoverAPIHandler = hasArticle $ \art -> do
@@ -148,23 +148,20 @@ updateArticleExtraAPIHandler :: ActionM ()
 updateArticleExtraAPIHandler = hasArticle $ \art -> do
   extra <- param "extra"
   case decode extra :: Maybe Value of
+    Nothing -> errBadRequest "extra field is required."
     Just ev -> do
       void . lift $ updateArticleExtra (artID art) $ unionExtraValue ev (artExtra art)
       resultOK
-    Nothing -> do
-      status status400
-      json $ object [ "err" .= T.pack "extra field is required." ]
+
 
 removeArticleExtraAPIHandler :: ActionM ()
 removeArticleExtraAPIHandler = hasArticle $ \art -> do
   extra <- param "extra"
   case decode extra :: Maybe Value of
+    Nothing -> errBadRequest "extra field is required."
     Just ev -> do
       void . lift $ updateArticleExtra (artID art) $ differenceExtraValue (artExtra art) ev
       resultOK
-    Nothing -> do
-      status status400
-      json $ object [ "err" .= T.pack "extra field is required." ]
 
 clearArticleExtraAPIHandler :: ActionM ()
 clearArticleExtraAPIHandler = hasArticle $ \art -> do
@@ -204,9 +201,8 @@ hasArticle action = do
 
   art <- lift $ getArticleById artId
   maybe (notFound artId) action art
-  where notFound artId = do
-          status status404
-          json $ object ["err" .= mconcat [ "Article (", T.pack $ show artId, ") not found" ] ]
+
+  where notFound artId = errNotFound $ concat [ "Article (", show artId, ") not found" ]
 
 existsArticleAPIHandler :: ActionM ()
 existsArticleAPIHandler = do
@@ -247,9 +243,7 @@ hasTag action = do
     else getTagByName name
 
   maybe notFound action tag
-  where notFound = do
-          status status404
-          json $ object ["err" .= T.pack "not found" ]
+  where notFound = errNotFound "Not Found."
 
 addArticleTagAPIHandler :: ActionM ()
 addArticleTagAPIHandler = hasTag $ \tag ->
@@ -275,15 +269,12 @@ updateTagAPIHandler = do
   oldtag <- lift $ getTagById tid
   if isJust oldtag then do
     tag2 <- lift $ getTagByName name
-    if isJust tag2 then do
-      status status400
-      json $ object ["err" .= T.pack "bad request" ]
+    if isJust tag2 then errBadRequest "Bad Request."
     else do
       void . lift $ updateTag tid name
       resultOK
-  else do
-    status status404
-    json $ object ["err" .= T.pack "not found" ]
+
+  else errNotFound "Not Found."
 
 createTimelineAPIHandler :: ActionM ()
 createTimelineAPIHandler =  hasArticle $ \art -> do

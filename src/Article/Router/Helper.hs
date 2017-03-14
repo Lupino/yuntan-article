@@ -26,6 +26,7 @@ import qualified Database.MySQL.Simple     as MySQL (withTransaction)
 import           Dispatch.Types.ListResult (From, ListResult (..), Size,
                                             emptyListResult)
 import           Dispatch.Types.OrderBy    (desc)
+import           Dispatch.Utils.Scotty     (ok)
 import           Haxl.Core                 (Env (..), env, initEnv, runHaxl,
                                             withEnv)
 import           Web.Scotty.Trans          (Parsable (..), json, param, rescue)
@@ -95,4 +96,4 @@ article = do
   lift $ getArticleById aid
 
 resultOK :: ActionM ()
-resultOK = json $ object ["result" .= T.pack "OK"]
+resultOK = ok "OK"
