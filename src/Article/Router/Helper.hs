@@ -17,10 +17,8 @@ import           Article
 import           Article.UserEnv           (ActionM, UserEnv (..))
 import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.Reader      (lift)
-import           Data.Aeson                (object, (.=))
 import           Data.Int                  (Int64)
 import           Data.Pool                 (withResource)
-import qualified Data.Text                 as T (pack)
 import           Data.Text.Lazy            (Text)
 import qualified Database.MySQL.Simple     as MySQL (withTransaction)
 import           Dispatch.Types.ListResult (From, ListResult (..), Size,
@@ -29,7 +27,7 @@ import           Dispatch.Types.OrderBy    (desc)
 import           Dispatch.Utils.Scotty     (ok)
 import           Haxl.Core                 (Env (..), env, initEnv, runHaxl,
                                             withEnv)
-import           Web.Scotty.Trans          (Parsable (..), json, param, rescue)
+import           Web.Scotty.Trans          (Parsable (..), param, rescue)
 
 safeParam ::(Parsable a) => Text -> a -> ActionM a
 safeParam key def = param key `rescue` (\_ -> return def)
