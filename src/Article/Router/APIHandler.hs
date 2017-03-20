@@ -102,7 +102,7 @@ createArticleAPIHandler = do
   summary   <- safeParam "summary" ""
   content   <- safeParam "content" (""::T.Text)
   from_url  <- param "from_url"
-  ct <- param "created_at"
+  ct <- safeParam "created_at" 0
 
   result <- lift $ createArticleAndFetch title summary content from_url ct
 

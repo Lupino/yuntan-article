@@ -28,9 +28,11 @@ import           Data.String               (fromString)
 
 import           Article.Types
 import           Article.Utils             (onlyToMaybe)
+import           Control.Monad.IO.Class    (liftIO)
 import           Data.Aeson                (Value (..), encode)
 import           Data.Int                  (Int64)
 import           Data.Maybe                (listToMaybe)
+import           Data.UnixTime
 import           Dispatch.Types.ListResult (From, Size)
 import           Dispatch.Types.OrderBy    (OrderBy)
 import           Prelude                   hiding (id)
@@ -38,10 +40,11 @@ import           Prelude                   hiding (id)
 createArticle :: Title -> Summary -> Content -> FromURL -> CreatedAt -> TablePrefix -> Connection -> IO Int64
 createArticle title summary content fromURL ct prefix conn = do
   oldID <- existsArticle fromURL prefix conn
+  ct' <- if ct > 0 then return ct else liftIO $ read . show . toEpochTime <$> getUnixTime
   case oldID of
     Just id -> return id
     Nothing -> do
-      void $ execute conn sql (title, summary, content, fromURL, fromURLHash, ct)
+      void $ execute conn sql (title, summary, content, fromURL, fromURLHash, ct')
       fromIntegral <$> insertID conn
   where fromURLHash = hex $ hash (pack fromURL)
         sql = fromString $ concat [ "INSERT INTO `", prefix, "_articles` "
