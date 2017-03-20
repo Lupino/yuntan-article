@@ -19,6 +19,8 @@ import           Network.Wai.Middleware.RequestLogger (logStdout)
 import           Network.Wai.Middleware.Static        (addBase, noDots,
                                                        staticPolicy, (>->))
 
+import           System.Directory                     (createDirectoryIfMissing)
+
 import qualified Article.Config                       as C
 import qualified Data.Yaml                            as Y
 
@@ -72,6 +74,8 @@ program Options { getConfigFile  = confFile
                 , getPort        = port
                 , getStaticPath  = path
                 } = do
+
+  createDirectoryIfMissing True path
   (Just conf) <- Y.decodeFile confFile :: IO (Maybe C.Config)
 
   let mysqlConfig  = C.mysqlConfig conf
