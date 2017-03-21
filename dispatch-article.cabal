@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Article
                      , Article.Application
+                     , Article.API
                      , Article.DataSource
                      , Article.DataSource.Article
                      , Article.DataSource.File
