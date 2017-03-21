@@ -108,8 +108,8 @@ createArticleHandler = do
 
   ok "article" result
 
-updateArticleHandler :: ActionM ()
-updateArticleHandler = hasArticle $ \_ -> do
+updateArticleHandler :: Article -> ActionM ()
+updateArticleHandler _ = do
   artId   <- param "art_id"
   title   <- safeParam "title" ""
   summary <- safeParam "summary" ""
@@ -127,44 +127,44 @@ updateArticleHandler = hasArticle $ \_ -> do
 
   ok "article" art2
 
-updateArticleCoverHandler :: ActionM ()
-updateArticleCoverHandler = hasArticle $ \art -> do
+updateArticleCoverHandler :: Article -> ActionM ()
+updateArticleCoverHandler (Article { artID = aid }) = do
   fileId <- param "file_id"
   file <- lift $ getFileById fileId
   case file of
     Just _ -> do
-      void . lift $ updateArticleCover (artID art) file
+      void . lift $ updateArticleCover aid file
       resultOK
 
     Nothing -> errNotFound $ concat [ "File (", show fileId, ") not found." ]
 
-removeArticleCoverHandler :: ActionM ()
-removeArticleCoverHandler = hasArticle $ \art -> do
-  void . lift $ updateArticleCover (artID art) Nothing
+removeArticleCoverHandler :: Article -> ActionM ()
+removeArticleCoverHandler (Article { artID = aid }) = do
+  void . lift $ updateArticleCover aid Nothing
   resultOK
 
-updateArticleExtraHandler :: ActionM ()
-updateArticleExtraHandler = hasArticle $ \art -> do
+updateArticleExtraHandler :: Article -> ActionM ()
+updateArticleExtraHandler (Article { artID = aid, artExtra = oev }) = do
   extra <- param "extra"
   case decode extra :: Maybe Value of
     Nothing -> errBadRequest "extra field is required."
     Just ev -> do
-      void . lift $ updateArticleExtra (artID art) $ unionValue ev (artExtra art)
+      void . lift $ updateArticleExtra aid $ unionValue ev oev
       resultOK
 
 
-removeArticleExtraHandler :: ActionM ()
-removeArticleExtraHandler = hasArticle $ \art -> do
+removeArticleExtraHandler :: Article -> ActionM ()
+removeArticleExtraHandler (Article { artID = aid, artExtra = oev }) = do
   extra <- param "extra"
   case decode extra :: Maybe Value of
     Nothing -> errBadRequest "extra field is required."
     Just ev -> do
-      void . lift $ updateArticleExtra (artID art) $ differenceValue (artExtra art) ev
+      void . lift $ updateArticleExtra aid $ differenceValue oev ev
       resultOK
 
-clearArticleExtraHandler :: ActionM ()
-clearArticleExtraHandler = hasArticle $ \art -> do
-  void . lift $ updateArticleExtra (artID art) Null
+clearArticleExtraHandler :: Article -> ActionM ()
+clearArticleExtraHandler (Article { artID = aid }) = do
+  void . lift $ updateArticleExtra aid Null
   resultOK
 
 removeArticleHandler :: ActionM ()
@@ -179,17 +179,8 @@ removeArticleHandler = do
   resultOK
 
 
-getArticleHandler :: ActionM ()
-getArticleHandler = hasArticle $ ok "article"
-
-hasArticle :: (Article -> ActionM ()) -> ActionM ()
-hasArticle action = do
-  artId <- param "art_id"
-
-  art <- lift $ getArticleById artId
-  maybe (notFound artId) action art
-
-  where notFound artId = errNotFound $ concat [ "Article (", show artId, ") not found" ]
+getArticleHandler :: Article -> ActionM ()
+getArticleHandler = ok "article"
 
 existsArticleHandler :: ActionM ()
 existsArticleHandler = do
@@ -217,36 +208,19 @@ createTagHandler = do
 
   ok "tag" tag
 
-getTagHandler :: ActionM ()
-getTagHandler = hasTag $ ok "tag"
+getTagHandler :: Tag -> ActionM ()
+getTagHandler = ok "tag"
 
-hasTag :: (Tag -> ActionM ()) -> ActionM ()
-hasTag action = do
-  tid <- safeParam "tag_id" (0::ID)
-  name <- safeParam "tag" (""::String)
+addArticleTagHandler :: Tag -> Article -> ActionM ()
+addArticleTagHandler (Tag { tagID = tid }) (Article { artID = aid }) = do
+  void . lift $ addArticleTag aid tid
 
-  tag <- lift $
-    if tid > 0 then getTagById tid
-    else getTagByName name
+  resultOK
 
-  maybe notFound action tag
-  where notFound = errNotFound "Not Found."
-
-addArticleTagHandler :: ActionM ()
-addArticleTagHandler = hasTag $ \tag ->
-  hasArticle $ \art -> do
-    lift $ do
-      void $ addArticleTag (artID art) (tagID tag)
-
-    resultOK
-
-removeArticleTagHandler :: ActionM ()
-removeArticleTagHandler = hasTag $ \tag ->
-  hasArticle $ \art -> do
-    lift $ do
-      void $ removeArticleTag (artID art) (tagID tag)
-
-    resultOK
+removeArticleTagHandler :: Tag -> Article -> ActionM ()
+removeArticleTagHandler (Tag { tagID = tid }) (Article { artID = aid }) = do
+  void . lift $ removeArticleTag aid tid
+  resultOK
 
 updateTagHandler :: ActionM ()
 updateTagHandler = do
@@ -263,21 +237,17 @@ updateTagHandler = do
 
   else errNotFound "Not Found."
 
-createTimelineHandler :: ActionM ()
-createTimelineHandler =  hasArticle $ \art -> do
+createTimelineHandler :: Article -> ActionM ()
+createTimelineHandler (Article { artID = aid }) = do
   name <- param "timeline"
-
-  lift $ do
-    void $ addTimeline name $ artID art
+  void . lift $ addTimeline name aid
 
   resultOK
 
-removeTimelineHandler :: ActionM ()
-removeTimelineHandler =  hasArticle $ \art -> do
+removeTimelineHandler :: Article -> ActionM ()
+removeTimelineHandler (Article { artID = aid }) = do
   name <- param "timeline"
-
-  lift $ do
-    void $ removeTimeline name $ artID art
+  void . lift $ removeTimeline name aid
 
   resultOK
 

@@ -10,6 +10,9 @@ module Article.Router.Helper
   , timelineMeta
   , articles
   , article
+  , requireArticle
+  , requireTag
+  , requireTagAndArticle
   , resultOK
   ) where
 
@@ -24,7 +27,7 @@ import qualified Database.MySQL.Simple     as MySQL (withTransaction)
 import           Dispatch.Types.ListResult (From, ListResult (..), Size,
                                             emptyListResult)
 import           Dispatch.Types.OrderBy    (desc)
-import           Dispatch.Utils.Scotty     (ok)
+import           Dispatch.Utils.Scotty     (errNotFound, ok)
 import           Haxl.Core                 (Env (..), env, initEnv, runHaxl,
                                             withEnv)
 import           Web.Scotty.Trans          (Parsable (..), param, rescue)
@@ -92,6 +95,33 @@ article :: ActionM (Maybe Article)
 article = do
   aid <- param "art_id"
   lift $ getArticleById aid
+
+requireArticle :: (Article -> ActionM ()) -> ActionM ()
+requireArticle action = do
+  artId <- param "art_id"
+
+  art <- lift $ getArticleById artId
+  maybe (notFound artId) action art
+
+  where notFound artId = errNotFound $ concat [ "Article (", show artId, ") not found" ]
+
+requireTag :: (Tag -> ActionM ()) -> ActionM ()
+requireTag action = do
+  tid <- safeParam "tag_id" (0::ID)
+  name <- safeParam "tag" (""::String)
+
+  tag <- lift $
+    if tid > 0 then getTagById tid
+    else getTagByName name
+
+  maybe notFound action tag
+  where notFound = errNotFound "Not Found."
+
+merge :: Monad m => ((a -> m ()) -> m ()) -> ((b -> m ()) -> m ()) -> (a -> b -> m ()) -> m ()
+merge f g t = f $ \a -> g $ \b -> t a b
+
+requireTagAndArticle :: (Tag -> Article -> ActionM ()) -> ActionM ()
+requireTagAndArticle = merge requireTag requireArticle
 
 resultOK :: ActionM ()
 resultOK = ok "result" ("OK" :: Text)

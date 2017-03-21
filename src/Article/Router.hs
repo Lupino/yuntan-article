@@ -1,6 +1,8 @@
 module Article.Router
   (
-    module Article.Router.Handler
+    module X
   ) where
 
-import           Article.Router.Handler
+import           Article.Router.Handler as X
+import           Article.Router.Helper  as X (requireArticle, requireTag,
+                                              requireTagAndArticle)
