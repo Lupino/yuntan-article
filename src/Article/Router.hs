@@ -1,6 +1,6 @@
 module Article.Router
   (
-    module Article.Router.APIHandler
+    module Article.Router.Handler
   ) where
 
-import           Article.Router.APIHandler
+import           Article.Router.Handler

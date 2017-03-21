@@ -1,30 +1,30 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Article.Router.APIHandler
+module Article.Router.Handler
   (
-    uploadAPIHandler
-  , createArticleAPIHandler
-  , updateArticleAPIHandler
-  , updateArticleCoverAPIHandler
-  , removeArticleCoverAPIHandler
-  , updateArticleExtraAPIHandler
-  , removeArticleExtraAPIHandler
-  , clearArticleExtraAPIHandler
-  , removeArticleAPIHandler
-  , getArticleAPIHandler
-  , getAllArticleAPIHandler
-  , existsArticleAPIHandler
+    uploadHandler
+  , createArticleHandler
+  , updateArticleHandler
+  , updateArticleCoverHandler
+  , removeArticleCoverHandler
+  , updateArticleExtraHandler
+  , removeArticleExtraHandler
+  , clearArticleExtraHandler
+  , removeArticleHandler
+  , getArticleHandler
+  , getAllArticleHandler
+  , existsArticleHandler
 
-  , createTagAPIHandler
-  , getTagAPIHandler
-  , addArticleTagAPIHandler
-  , removeArticleTagAPIHandler
-  , updateTagAPIHandler
+  , createTagHandler
+  , getTagHandler
+  , addArticleTagHandler
+  , removeArticleTagHandler
+  , updateTagHandler
 
-  , createTimelineAPIHandler
-  , removeTimelineAPIHandler
-  , getAllTimelineAPIHandler
-  , saveTimelineMetaAPIHandler
-  , removeTimelineMetaAPIHandler
+  , createTimelineHandler
+  , removeTimelineHandler
+  , getAllTimelineHandler
+  , saveTimelineMetaHandler
+  , removeTimelineMetaHandler
   ) where
 
 import           Control.Monad             (void)
@@ -80,8 +80,8 @@ getFileExtra fn fc shape = fileExtraEmpty { fileSize   = size
         h | isJust shape = Just $ (snd . fromJust) shape
           | otherwise    = Nothing
 
-uploadAPIHandler :: ActionM ()
-uploadAPIHandler = do
+uploadHandler :: ActionM ()
+uploadHandler = do
   fn <- safeParam "fileName" "xxxx.xx"
   wb <- body
 
@@ -96,8 +96,8 @@ uploadAPIHandler = do
   fileObj <- lift $ uploadFileWithExtra path wb (getFileExtra fn wb shape)
   json fileObj
 
-createArticleAPIHandler :: ActionM ()
-createArticleAPIHandler = do
+createArticleHandler :: ActionM ()
+createArticleHandler = do
   title     <- param "title"
   summary   <- safeParam "summary" ""
   content   <- safeParam "content" (""::T.Text)
@@ -108,8 +108,8 @@ createArticleAPIHandler = do
 
   ok "article" result
 
-updateArticleAPIHandler :: ActionM ()
-updateArticleAPIHandler = hasArticle $ \_ -> do
+updateArticleHandler :: ActionM ()
+updateArticleHandler = hasArticle $ \_ -> do
   artId   <- param "art_id"
   title   <- safeParam "title" ""
   summary <- safeParam "summary" ""
@@ -127,8 +127,8 @@ updateArticleAPIHandler = hasArticle $ \_ -> do
 
   ok "article" art2
 
-updateArticleCoverAPIHandler :: ActionM ()
-updateArticleCoverAPIHandler = hasArticle $ \art -> do
+updateArticleCoverHandler :: ActionM ()
+updateArticleCoverHandler = hasArticle $ \art -> do
   fileId <- param "file_id"
   file <- lift $ getFileById fileId
   case file of
@@ -138,13 +138,13 @@ updateArticleCoverAPIHandler = hasArticle $ \art -> do
 
     Nothing -> errNotFound $ concat [ "File (", show fileId, ") not found." ]
 
-removeArticleCoverAPIHandler :: ActionM ()
-removeArticleCoverAPIHandler = hasArticle $ \art -> do
+removeArticleCoverHandler :: ActionM ()
+removeArticleCoverHandler = hasArticle $ \art -> do
   void . lift $ updateArticleCover (artID art) Nothing
   resultOK
 
-updateArticleExtraAPIHandler :: ActionM ()
-updateArticleExtraAPIHandler = hasArticle $ \art -> do
+updateArticleExtraHandler :: ActionM ()
+updateArticleExtraHandler = hasArticle $ \art -> do
   extra <- param "extra"
   case decode extra :: Maybe Value of
     Nothing -> errBadRequest "extra field is required."
@@ -153,8 +153,8 @@ updateArticleExtraAPIHandler = hasArticle $ \art -> do
       resultOK
 
 
-removeArticleExtraAPIHandler :: ActionM ()
-removeArticleExtraAPIHandler = hasArticle $ \art -> do
+removeArticleExtraHandler :: ActionM ()
+removeArticleExtraHandler = hasArticle $ \art -> do
   extra <- param "extra"
   case decode extra :: Maybe Value of
     Nothing -> errBadRequest "extra field is required."
@@ -162,13 +162,13 @@ removeArticleExtraAPIHandler = hasArticle $ \art -> do
       void . lift $ updateArticleExtra (artID art) $ differenceValue (artExtra art) ev
       resultOK
 
-clearArticleExtraAPIHandler :: ActionM ()
-clearArticleExtraAPIHandler = hasArticle $ \art -> do
+clearArticleExtraHandler :: ActionM ()
+clearArticleExtraHandler = hasArticle $ \art -> do
   void . lift $ updateArticleExtra (artID art) Null
   resultOK
 
-removeArticleAPIHandler :: ActionM ()
-removeArticleAPIHandler = do
+removeArticleHandler :: ActionM ()
+removeArticleHandler = do
   artId   <- param "art_id"
 
   lift $ withTransaction $ do
@@ -179,8 +179,8 @@ removeArticleAPIHandler = do
   resultOK
 
 
-getArticleAPIHandler :: ActionM ()
-getArticleAPIHandler = hasArticle $ ok "article"
+getArticleHandler :: ActionM ()
+getArticleHandler = hasArticle $ ok "article"
 
 hasArticle :: (Article -> ActionM ()) -> ActionM ()
 hasArticle action = do
@@ -191,8 +191,8 @@ hasArticle action = do
 
   where notFound artId = errNotFound $ concat [ "Article (", show artId, ") not found" ]
 
-existsArticleAPIHandler :: ActionM ()
-existsArticleAPIHandler = do
+existsArticleHandler :: ActionM ()
+existsArticleHandler = do
   fromURL <- param "from_url"
 
   art <- lift $ existsArticle fromURL
@@ -200,13 +200,13 @@ existsArticleAPIHandler = do
   ok "id" $ fromMaybe 0 art
 
 
-getAllArticleAPIHandler :: ActionM ()
-getAllArticleAPIHandler = do
+getAllArticleHandler :: ActionM ()
+getAllArticleHandler = do
   result <- articles
   resultArticle result
 
-createTagAPIHandler :: ActionM ()
-createTagAPIHandler = do
+createTagHandler :: ActionM ()
+createTagHandler = do
   name <- param "tag"
   tag <- lift $ do
     t <- getTagByName name
@@ -217,8 +217,8 @@ createTagAPIHandler = do
 
   ok "tag" tag
 
-getTagAPIHandler :: ActionM ()
-getTagAPIHandler = hasTag $ ok "tag"
+getTagHandler :: ActionM ()
+getTagHandler = hasTag $ ok "tag"
 
 hasTag :: (Tag -> ActionM ()) -> ActionM ()
 hasTag action = do
@@ -232,24 +232,24 @@ hasTag action = do
   maybe notFound action tag
   where notFound = errNotFound "Not Found."
 
-addArticleTagAPIHandler :: ActionM ()
-addArticleTagAPIHandler = hasTag $ \tag ->
+addArticleTagHandler :: ActionM ()
+addArticleTagHandler = hasTag $ \tag ->
   hasArticle $ \art -> do
     lift $ do
       void $ addArticleTag (artID art) (tagID tag)
 
     resultOK
 
-removeArticleTagAPIHandler :: ActionM ()
-removeArticleTagAPIHandler = hasTag $ \tag ->
+removeArticleTagHandler :: ActionM ()
+removeArticleTagHandler = hasTag $ \tag ->
   hasArticle $ \art -> do
     lift $ do
       void $ removeArticleTag (artID art) (tagID tag)
 
     resultOK
 
-updateTagAPIHandler :: ActionM ()
-updateTagAPIHandler = do
+updateTagHandler :: ActionM ()
+updateTagHandler = do
   tid <- param "tag_id"
   name <- param "tag"
 
@@ -263,8 +263,8 @@ updateTagAPIHandler = do
 
   else errNotFound "Not Found."
 
-createTimelineAPIHandler :: ActionM ()
-createTimelineAPIHandler =  hasArticle $ \art -> do
+createTimelineHandler :: ActionM ()
+createTimelineHandler =  hasArticle $ \art -> do
   name <- param "timeline"
 
   lift $ do
@@ -272,8 +272,8 @@ createTimelineAPIHandler =  hasArticle $ \art -> do
 
   resultOK
 
-removeTimelineAPIHandler :: ActionM ()
-removeTimelineAPIHandler =  hasArticle $ \art -> do
+removeTimelineHandler :: ActionM ()
+removeTimelineHandler =  hasArticle $ \art -> do
   name <- param "timeline"
 
   lift $ do
@@ -281,15 +281,15 @@ removeTimelineAPIHandler =  hasArticle $ \art -> do
 
   resultOK
 
-getAllTimelineAPIHandler :: ActionM ()
-getAllTimelineAPIHandler = do
+getAllTimelineHandler :: ActionM ()
+getAllTimelineHandler = do
   name <- param "timeline"
   result <- timeline name
 
   resultArticle result
 
-saveTimelineMetaAPIHandler :: ActionM ()
-saveTimelineMetaAPIHandler = do
+saveTimelineMetaHandler :: ActionM ()
+saveTimelineMetaHandler = do
   name <- param "timeline"
   title <- safeParam "title" ""
   summary <- safeParam "summary" ""
@@ -297,8 +297,8 @@ saveTimelineMetaAPIHandler = do
 
   resultOK
 
-removeTimelineMetaAPIHandler :: ActionM ()
-removeTimelineMetaAPIHandler = do
+removeTimelineMetaHandler :: ActionM ()
+removeTimelineMetaHandler = do
   name <- param "timeline"
   void . lift $ removeTimelineMeta name
 
