@@ -39,7 +39,7 @@ packages:
 - '.'
 - location:
     git: https://github.com/Lupino/dispatch-common.git
-    commit: 7cad70c003cf2a87f1dec5fcc30d9f7218f0fd36
+    commit: bac90c04c2448ed6ac3e76dd27b5bbf1367cbb14
   extra-dep: true
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
@@ -51,6 +51,8 @@ flags:
     list-result-type: true
     order-by-type: true
     mysql-config: true
+    scotty-utils: true
+    haxl-utils: true
 
 # Extra package databases containing global packages
 extra-package-dbs: []
