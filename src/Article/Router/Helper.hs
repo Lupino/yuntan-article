@@ -1,9 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Article.Router.Helper
   (
-    safeParam
-  , pageParam
-  , runWithEnv
+    pageParam
   , withTransaction
   , timeline
   , timelineTitle
@@ -27,13 +25,9 @@ import qualified Database.MySQL.Simple     as MySQL (withTransaction)
 import           Dispatch.Types.ListResult (From, ListResult (..), Size,
                                             emptyListResult)
 import           Dispatch.Types.OrderBy    (desc)
-import           Dispatch.Utils.Scotty     (errNotFound, ok)
-import           Haxl.Core                 (Env (..), env, initEnv, runHaxl,
-                                            withEnv)
-import           Web.Scotty.Trans          (Parsable (..), param, rescue)
-
-safeParam ::(Parsable a) => Text -> a -> ActionM a
-safeParam key def = param key `rescue` (\_ -> return def)
+import           Dispatch.Utils.Scotty     (errNotFound, ok, safeParam)
+import           Haxl.Core                 (Env (..), env, initEnv, runHaxl)
+import           Web.Scotty.Trans          (param)
 
 pageParam :: ActionM (Int64, Int64)
 pageParam = do
@@ -41,13 +35,6 @@ pageParam = do
   from <- safeParam "from" (0 :: Int64)
   size <- safeParam "size" 10
   return (max ((page - 1) * size) from, size)
-
-runWithEnv :: ArticleM a -> ArticleM a
-runWithEnv act = do
-  state <- env states
-  ue <- env userEnv
-  env0 <- liftIO $ initEnv state ue
-  withEnv env0 act
 
 withTransaction :: ArticleM a -> ArticleM a
 withTransaction act = do

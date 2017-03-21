@@ -51,7 +51,9 @@ import           Article.Utils             (getImageShape)
 import           Dispatch.Types.ListResult (ListResult (getResult), merge)
 import           Dispatch.Utils.JSON       (differenceValue, unionValue)
 import           Dispatch.Utils.Scotty     (errBadRequest, errNotFound, ok,
-                                            okListResult)
+                                            okListResult, safeParam)
+
+import           Dispatch.Utils.Haxl       (runWithEnv)
 
 getMineType :: T.Text -> (String, String)
 getMineType =
