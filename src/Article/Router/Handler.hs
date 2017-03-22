@@ -25,6 +25,7 @@ module Article.Router.Handler
   , getAllTimelineHandler
   , saveTimelineMetaHandler
   , removeTimelineMetaHandler
+  , getTimelineMetaHandler
   ) where
 
 import           Control.Monad             (void)
@@ -32,7 +33,7 @@ import           Control.Monad.IO.Class    (liftIO)
 import           Control.Monad.Reader      (lift)
 import           Haxl.Core                 (Env (..), env)
 
-import           Data.Aeson                (Value (..), decode)
+import           Data.Aeson                (Value (..), decode, object, (.=))
 import           Data.Map                  as Map (lookup)
 import           Data.Maybe                (fromJust, fromMaybe, isJust)
 import           Network.Mime              (defaultMimeMap, fileNameExtensions)
@@ -275,6 +276,14 @@ removeTimelineMetaHandler = do
   void . lift $ removeTimelineMeta name
 
   resultOK
+
+getTimelineMetaHandler :: ActionM ()
+getTimelineMetaHandler = do
+  name <- param "timeline"
+  meta <- lift $ getTimelineMeta name
+  case meta of
+    Nothing     -> json $ object ["title" .= Null, "summary" .= Null]
+    Just (t, s) -> json $ object ["title" .= t, "summary" .= s]
 
 resultArticle :: ListResult Article -> ActionM ()
 resultArticle result = do
