@@ -1,6 +1,6 @@
 /**
  * @apiDefine ArticleResponse
- * @apiSuccess {json} article Article object.
+ * @apiSuccess {Article} article Article object.
  * @apiSuccessExample {json} Success-Response:
  *    {
  *      "article": {
@@ -20,7 +20,10 @@
 
 /**
  * @apiDefine ArticleListResponse
- * @apiSuccess {json} article Article object.
+ * @apiSuccess {[Article]} article Article object.
+ * @apiSuccess {Number} from Result from.
+ * @apiSuccess {Number} size Result size.
+ * @apiSuccess {Number} total Result count.
  * @apiSuccessExample {json} Success-Response:
  *    {
  *      "size": 10,

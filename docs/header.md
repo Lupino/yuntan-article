@@ -75,12 +75,7 @@
     <tr>
       <td class="code">from_url_hash</td>
       <td> String </td>
-      <td> <p>hash from url of the Article.</p> </td>
-    </tr>
-    <tr>
-      <td class="code">from_url</td>
-      <td> String </td>
-      <td> <p>From URL of the Article.</p> </td>
+      <td> <p>Hash from url of the Article.</p> </td>
     </tr>
     <tr>
       <td class="code">extra</td>
