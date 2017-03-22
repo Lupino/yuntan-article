@@ -84,7 +84,7 @@
     </tr>
     <tr>
       <td class="code">cover</td>
-      <td> User </td>
+      <td> File </td>
       <td> <p>Cover of the Article.</p> </td>
     </tr>
     <tr>
