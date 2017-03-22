@@ -35,3 +35,5 @@ dispatch-article -c config.yaml
 ```
 
 ## API
+
+See [docs](https://lupino.github.io/dispatch-article/)
