@@ -1,0 +1,1 @@
+define({  "name": "dispatch-article",  "version": "0.1.0",  "description": "Article micro server api document.",  "title": "article api",  "sampleUrl": false,  "defaultVersion": "0.0.0",  "apidoc": "0.3.0",  "generator": {    "name": "apidoc",    "time": "2017-03-22T06:40:30.163Z",    "url": "http://apidocjs.com",    "version": "0.17.5"  }});
