@@ -37,7 +37,7 @@ application mids = do
   post   "/api/timeline/:timeline/"          $ requireArticle createTimelineHandler
   post   "/api/timeline/:timeline/meta"      saveTimelineMetaHandler
   delete "/api/timeline/:timeline/meta"      removeTimelineMetaHandler
-  delete "/api/timeline/:timeline/:art_id/"  $ requireArticle  removeTimelineHandler
+  delete "/api/timeline/:timeline/:art_id/"  $ requireArticle removeTimelineHandler
 
   post   "/api/articles/:art_id/tags/"       $ requireTagAndArticle addArticleTagHandler
   delete "/api/articles/:art_id/tags/"       $ requireTagAndArticle removeArticleTagHandler
