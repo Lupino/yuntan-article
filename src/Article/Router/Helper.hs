@@ -99,7 +99,7 @@ requireTag action = do
 
   tag <- lift $
     if tid > 0 then getTagById tid
-    else getTagByName name
+               else getTagByName name
 
   maybe notFound action tag
   where notFound = errNotFound "Not Found."
