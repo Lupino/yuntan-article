@@ -112,21 +112,21 @@ createArticleHandler = do
   ok "article" result
 
 updateArticleHandler :: Article -> ActionM ()
-updateArticleHandler _ = do
-  artId   <- param "art_id"
+updateArticleHandler art@(Article { artID = aid }) = do
   title   <- safeParam "title" ""
   summary <- safeParam "summary" ""
   content <- safeParam "content" (""::T.Text)
 
   art2 <- lift $ do
-    void $ if (not . null) title && (not . null) summary && T.length content > 0 then
-      updateArticle artId title summary content
+    changed <- if (not . null) title && (not . null) summary && T.length content > 0 then
+      updateArticle aid title summary content
     else do
-      changed1 <- if (not . null) title then updateArticleTitle artId title else return 0
-      changed2 <- if (not . null) summary then updateArticleSummary artId summary else return 0
-      changed3 <- if T.length content > 0 then updateArticleContent artId content else return 0
+      changed1 <- if (not . null) title then updateArticleTitle aid title else return 0
+      changed2 <- if (not . null) summary then updateArticleSummary aid summary else return 0
+      changed3 <- if T.length content > 0 then updateArticleContent aid content else return 0
       return (changed1 + changed2 + changed3)
-    runWithEnv $ getArticleById artId
+    if changed > 0 then runWithEnv $ getArticleById aid
+                   else return (Just art)
 
   ok "article" art2
 
