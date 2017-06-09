@@ -29,14 +29,14 @@ createArticleTable prefix conn = execute_ conn sql
                                   , "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
                                   , "  `title` varchar(32) NOT NULL,"
                                   , "  `summary` varchar(1500) NOT NULL,"
-                                  , "  `content` text,"
+                                  , "  `content` longtext,"
                                   , "  `from_url` varchar(255) NOT NULL,"
                                   , "  `from_url_hash` varchar(128) NOT NULL,"
                                   , "  `cover` varchar(255) DEFAULT NULL,"
                                   , "  `extra` varchar(1500) DEFAULT NULL,"
                                   , "  `created_at` int(10) unsigned NOT NULL,"
                                   , "  PRIMARY KEY (`id`),"
-                                  , "UNIQUE KEY `from_url_hash` (`from_url_hash`)"
+                                  , "  UNIQUE KEY `from_url_hash` (`from_url_hash`)"
                                   , ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
                                   ]
 
