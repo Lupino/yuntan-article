@@ -46,7 +46,7 @@ removeAllTimelineByArtId aid prefix conn = execute conn sql (Only aid)
 
 getAllTimeline :: String -> From -> Size -> OrderBy -> TablePrefix -> Connection -> IO [Article]
 getAllTimeline name f s o prefix conn = query conn sql (name, f, s)
-  where sql = fromString $ concat [ "SELECT a.* FROM `articles` AS a"
+  where sql = fromString $ concat [ "SELECT a.* FROM `", prefix, "_articles` AS a"
                                   , " LEFT JOIN `", prefix, "_timeline` AS t ON t.`art_id` = a.`id` "
                                   , " WHERE t.`name`=? "
                                   , show o
