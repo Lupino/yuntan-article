@@ -5,8 +5,8 @@ This is the core source of huabot.com.
 ## Build
 
 ```bash
-git clone https://github.com/Lupino/dispatch-article.git
-cd dispatch-article
+git clone https://github.com/Lupino/yuntan-article.git
+cd yuntan-article
 stack build
 stack install
 ```
@@ -17,7 +17,7 @@ First create a mysql database.
 
 ```bash
 $ mysql -u root
-mysql> CREATE DATABASE dispatch_article;
+mysql> CREATE DATABASE yuntan_article;
 mysql> exit;
 ```
 
@@ -31,9 +31,9 @@ vim config.yaml
 Third running.
 
 ```bash
-dispatch-article -c config.yaml
+yuntan-article -c config.yaml
 ```
 
 ## API
 
-See [docs](https://lupino.github.io/dispatch-article/)
+See [docs](https://lupino.github.io/yuntan-article/)

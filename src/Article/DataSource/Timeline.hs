@@ -15,15 +15,15 @@ module Article.DataSource.Timeline
   ) where
 
 import           Article.Types
-import           Control.Monad             (void)
-import           Data.Int                  (Int64)
-import           Data.Maybe                (listToMaybe)
-import           Data.String               (fromString)
+import           Control.Monad           (void)
+import           Data.Int                (Int64)
+import           Data.Maybe              (listToMaybe)
+import           Data.String             (fromString)
 import           Data.UnixTime
-import           Database.MySQL.Simple     (Connection, Only (..), execute,
-                                            insertID, query)
-import           Dispatch.Types.ListResult (From, Size)
-import           Dispatch.Types.OrderBy    (OrderBy)
+import           Database.MySQL.Simple   (Connection, Only (..), execute,
+                                          insertID, query)
+import           Yuntan.Types.ListResult (From, Size)
+import           Yuntan.Types.OrderBy    (OrderBy)
 
 addTimeline :: String -> ID -> TablePrefix -> Connection -> IO ID
 addTimeline name aid prefix conn = do

@@ -15,19 +15,19 @@ module Article.Router.Helper
   ) where
 
 import           Article
-import           Article.UserEnv           (ActionM, UserEnv (..))
-import           Control.Monad.IO.Class    (liftIO)
-import           Control.Monad.Reader      (lift)
-import           Data.Int                  (Int64)
-import           Data.Pool                 (withResource)
-import           Data.Text.Lazy            (Text)
-import qualified Database.MySQL.Simple     as MySQL (withTransaction)
-import           Dispatch.Types.ListResult (From, ListResult (..), Size,
-                                            emptyListResult)
-import           Dispatch.Types.OrderBy    (desc)
-import           Dispatch.Utils.Scotty     (errNotFound, ok, safeParam)
-import           Haxl.Core                 (Env (..), env, initEnv, runHaxl)
-import           Web.Scotty.Trans          (param)
+import           Article.UserEnv         (ActionM, UserEnv (..))
+import           Control.Monad.IO.Class  (liftIO)
+import           Control.Monad.Reader    (lift)
+import           Data.Int                (Int64)
+import           Data.Pool               (withResource)
+import           Data.Text.Lazy          (Text)
+import qualified Database.MySQL.Simple   as MySQL (withTransaction)
+import           Haxl.Core               (Env (..), env, initEnv, runHaxl)
+import           Web.Scotty.Trans        (param)
+import           Yuntan.Types.ListResult (From, ListResult (..), Size,
+                                          emptyListResult)
+import           Yuntan.Types.OrderBy    (desc)
+import           Yuntan.Utils.Scotty     (errNotFound, ok, safeParam)
 
 pageParam :: ActionM (Int64, Int64)
 pageParam = do

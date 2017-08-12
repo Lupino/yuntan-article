@@ -14,16 +14,16 @@ module Article.DataSource.Tag
   ) where
 
 import           Article.Types
-import           Control.Monad             (void)
-import           Data.Int                  (Int64)
-import           Data.Maybe                (listToMaybe)
-import           Data.String               (fromString)
+import           Control.Monad           (void)
+import           Data.Int                (Int64)
+import           Data.Maybe              (listToMaybe)
+import           Data.String             (fromString)
 import           Data.UnixTime
-import           Database.MySQL.Simple     (Connection, Only (..), execute,
-                                            insertID, query)
-import           Dispatch.Types.ListResult (From, Size)
-import           Dispatch.Types.OrderBy    (OrderBy)
-import           Prelude                   hiding (id)
+import           Database.MySQL.Simple   (Connection, Only (..), execute,
+                                          insertID, query)
+import           Prelude                 hiding (id)
+import           Yuntan.Types.ListResult (From, Size)
+import           Yuntan.Types.OrderBy    (OrderBy)
 
 addTag :: TagName -> TablePrefix -> Connection -> IO ID
 addTag name prefix conn = do

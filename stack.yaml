@@ -38,8 +38,8 @@ resolver: lts-8.11
 packages:
 - '.'
 - location:
-    git: https://github.com/Lupino/dispatch-common.git
-    commit: bac90c04c2448ed6ac3e76dd27b5bbf1367cbb14
+    git: https://github.com/Lupino/yuntan-common.git
+    commit: be09d369c47141a3c3b21445c3d343ba93876e5c
   extra-dep: true
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
@@ -47,7 +47,7 @@ packages:
 
 # Override default flag values for local packages and extra-deps
 flags:
-  dispatch-common:
+  yuntan-common:
     list-result-type: true
     order-by-type: true
     mysql-config: true

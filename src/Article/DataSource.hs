@@ -29,8 +29,8 @@ import           Article.DataSource.Tag
 import           Article.DataSource.Timeline
 import           Article.Types
 import           Article.UserEnv             (UserEnv (..))
-import           Dispatch.Types.ListResult   (From, Size)
-import           Dispatch.Types.OrderBy      (OrderBy)
+import           Yuntan.Types.ListResult     (From, Size)
+import           Yuntan.Types.OrderBy        (OrderBy)
 
 import qualified Control.Exception           (SomeException, bracket_, try)
 import           Data.Aeson                  (Value (..))

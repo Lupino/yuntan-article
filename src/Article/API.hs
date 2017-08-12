@@ -50,22 +50,22 @@ module Article.API
 
 import           Article.Types
 
-import           Article.DataSource        (ArticleReq (..))
-import           Data.Traversable          (for)
-import           Haxl.Core                 (dataFetch, uncachedRequest)
+import           Article.DataSource      (ArticleReq (..))
+import           Data.Traversable        (for)
+import           Haxl.Core               (dataFetch, uncachedRequest)
 
-import           Data.Int                  (Int64)
-import           Data.Maybe                (isJust)
+import           Data.Int                (Int64)
+import           Data.Maybe              (isJust)
 
-import           Article.Utils             (cleanHtml, firstImage)
-import qualified Data.Text                 as T (length)
+import           Article.Utils           (cleanHtml, firstImage)
+import qualified Data.Text               as T (length)
 
-import           Data.ByteString.Lazy      (ByteString)
+import           Data.ByteString.Lazy    (ByteString)
 
-import           Article.UserEnv           (ArticleM)
-import           Data.Aeson                (Value)
-import           Dispatch.Types.ListResult (From, Size)
-import           Dispatch.Types.OrderBy    (OrderBy)
+import           Article.UserEnv         (ArticleM)
+import           Data.Aeson              (Value)
+import           Yuntan.Types.ListResult (From, Size)
+import           Yuntan.Types.OrderBy    (OrderBy)
 
 getArticleById :: ID -> ArticleM (Maybe Article)
 getArticleById artId = do

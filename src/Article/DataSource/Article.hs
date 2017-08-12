@@ -16,26 +16,26 @@ module Article.DataSource.Article
   , existsArticle
   ) where
 
-import           Control.Monad             (void)
-import           Database.MySQL.Simple     (Connection, Only (..), execute,
-                                            insertID, query, query_)
+import           Control.Monad           (void)
+import           Database.MySQL.Simple   (Connection, Only (..), execute,
+                                          insertID, query, query_)
 
-import           Control.Applicative       ((<$>))
-import           Crypto.Hash.SHA1          (hash)
-import           Data.ByteString.Char8     (pack)
-import           Data.Hex                  (hex)
-import           Data.String               (fromString)
+import           Control.Applicative     ((<$>))
+import           Crypto.Hash.SHA1        (hash)
+import           Data.ByteString.Char8   (pack)
+import           Data.Hex                (hex)
+import           Data.String             (fromString)
 
 import           Article.Types
-import           Article.Utils             (onlyToMaybe)
-import           Control.Monad.IO.Class    (liftIO)
-import           Data.Aeson                (Value (..), encode)
-import           Data.Int                  (Int64)
-import           Data.Maybe                (listToMaybe)
+import           Article.Utils           (onlyToMaybe)
+import           Control.Monad.IO.Class  (liftIO)
+import           Data.Aeson              (Value (..), encode)
+import           Data.Int                (Int64)
+import           Data.Maybe              (listToMaybe)
 import           Data.UnixTime
-import           Dispatch.Types.ListResult (From, Size)
-import           Dispatch.Types.OrderBy    (OrderBy)
-import           Prelude                   hiding (id)
+import           Prelude                 hiding (id)
+import           Yuntan.Types.ListResult (From, Size)
+import           Yuntan.Types.OrderBy    (OrderBy)
 
 createArticle :: Title -> Summary -> Content -> FromURL -> CreatedAt -> TablePrefix -> Connection -> IO Int64
 createArticle title summary content fromURL ct prefix conn = do

@@ -1,8 +1,8 @@
-name:                dispatch-article
+name:                yuntan-article
 version:             0.1.0.0
 synopsis:            A article micro service
 description:         Please see README.md
-homepage:            https://github.com/Lupino/dispatch-article#readme
+homepage:            https://github.com/Lupino/yuntan-article#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Li Meng Jun
@@ -61,17 +61,17 @@ library
 
                      , tagsoup
 
-                     , dispatch-common
+                     , yuntan-common
 
                      , JuicyPixels
   default-language:    Haskell2010
 
-executable dispatch-article
+executable yuntan-article
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
-                     , dispatch-article
+                     , yuntan-article
                      , warp
                      , streaming-commons
                      , scotty
@@ -86,4 +86,4 @@ executable dispatch-article
 
 source-repository head
   type:     git
-  location: https://github.com/Lupino/dispatch-article
+  location: https://github.com/Lupino/yuntan-article
