@@ -118,7 +118,7 @@ getFileHandler = do
     Just f  -> do
       setHeader "Content-Type" . LT.pack . fileType $ fileExtra f
 
-      let filePath = path </> fileKey f <.> fileType (fileExtra f)
+      let filePath = path </> fileKey f <.> fileExt (fileExtra f)
       fileExists <- liftIO $ doesFileExist filePath
       if fileExists then raw =<< liftIO (LB.readFile filePath)
                     else status status404 >> raw LB.empty
