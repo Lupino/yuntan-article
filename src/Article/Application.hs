@@ -44,3 +44,5 @@ application mids = do
   delete "/api/articles/:art_id/tags/"       $ requireTagAndArticle removeArticleTagHandler
 
   get    "/api/check/"                       existsArticleHandler
+
+  get    "/api/file/:fileName"               getFileHandler

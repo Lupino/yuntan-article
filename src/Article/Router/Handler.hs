@@ -2,6 +2,7 @@
 module Article.Router.Handler
   (
     uploadHandler
+  , getFileHandler
   , createArticleHandler
   , updateArticleHandler
   , updateArticleCoverHandler
@@ -36,13 +37,17 @@ import           Haxl.Core               (Env (..), env)
 import           Data.Aeson              (Value (..), decode, object, (.=))
 import           Data.Map                as Map (lookup)
 import           Data.Maybe              (fromJust, fromMaybe, isJust)
+import           Network.HTTP.Types      (status404)
 import           Network.Mime            (defaultMimeMap, fileNameExtensions)
-import           Web.Scotty.Trans        (body, json, param)
+import           Web.Scotty.Trans        (body, json, param, raw, setHeader,
+                                          status)
 
 import           Control.Exception       (SomeException, try)
 import qualified Data.ByteString.Char8   as BS (unpack)
-import qualified Data.ByteString.Lazy    as LB (ByteString, length, toStrict)
+import qualified Data.ByteString.Lazy    as LB (ByteString, empty, length,
+                                                readFile, toStrict)
 import qualified Data.Text               as T (Text, length, pack, unpack)
+import qualified Data.Text.Lazy          as LT (pack)
 
 
 import           Article
@@ -54,6 +59,8 @@ import           Yuntan.Utils.JSON       (differenceValue, unionValue)
 import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound, ok,
                                           okListResult, safeParam)
 
+import           System.Directory        (doesFileExist)
+import           System.FilePath         (dropExtension, (<.>), (</>))
 import           Yuntan.Utils.Haxl       (runWithEnv)
 
 getMineType :: T.Text -> (String, String)
@@ -98,6 +105,23 @@ uploadHandler = do
 
   fileObj <- lift $ uploadFileWithExtra path wb (getFileExtra fn wb shape)
   json fileObj
+
+getFileHandler :: ActionM ()
+getFileHandler = do
+  fn <- param "fileName"
+  path <- lift $ uploadPath <$> env userEnv
+
+  file <- lift $ getFileWithKey (dropExtension fn)
+
+  case file of
+    Nothing -> status status404 >> raw LB.empty
+    Just f  -> do
+      setHeader "Content-Type" . LT.pack . fileType $ fileExtra f
+
+      let filePath = path </> fileKey f <.> fileType (fileExtra f)
+      fileExists <- liftIO $ doesFileExist filePath
+      if fileExists then raw =<< liftIO (LB.readFile filePath)
+                    else status status404 >> raw LB.empty
 
 createArticleHandler :: ActionM ()
 createArticleHandler = do
