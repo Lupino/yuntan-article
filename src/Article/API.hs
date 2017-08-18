@@ -67,6 +67,8 @@ import           Data.Aeson              (Value)
 import           Yuntan.Types.ListResult (From, Size)
 import           Yuntan.Types.OrderBy    (OrderBy)
 
+import           System.FilePath         (takeFileName)
+
 getArticleById :: ID -> ArticleM (Maybe Article)
 getArticleById artId = do
   mart <- dataFetch (GetArticleById artId)
@@ -159,7 +161,9 @@ toCardItem art = do
         uri | contentLength > 10 = "/t/" ++ show cid ++ ".html"
             | otherwise          = artFromURL art
 
-        key     = takeWhile (/= '.') $ drop 9 $ firstImage $ artSummary art
+        takeFileKey = takeWhile (/= '.') . takeFileName . takeWhile (/= '?')
+
+        key     = takeFileKey . firstImage $ artSummary art
         cover   = artCover art
         tags    = artTags art
         extra   = artExtra art
