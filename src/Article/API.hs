@@ -41,7 +41,6 @@ module Article.API
   , getAllTimeline
   , countTimeline
   , getAllArticleTimeline
-  , fillAllTimeline
   , saveTimelineMeta
   , removeTimelineMeta
   , getTimelineMeta
@@ -73,7 +72,7 @@ getArticleById :: ID -> ArticleM (Maybe Article)
 getArticleById artId = do
   mart <- dataFetch (GetArticleById artId)
   case mart of
-    Just art -> return . Just =<< fillArticleCover =<< fillAllTagName art
+    Just art -> return . Just =<< fillAllTimeline =<< fillArticleCover =<< fillAllTagName art
     Nothing  -> return Nothing
 
 
@@ -110,7 +109,7 @@ getAllArticle :: From -> Size -> OrderBy -> ArticleM [Article]
 getAllArticle f s o =do
   arts <- dataFetch (GetAllArticle f s o)
   for arts $ \art -> do
-    fillArticleCover =<< fillAllTagName art
+    fillAllTimeline =<< fillArticleCover =<< fillAllTagName art
 
 countAllArticle :: ArticleM Int64
 countAllArticle = dataFetch CountAllArticle
@@ -212,7 +211,7 @@ removeAllTimelineByArtId aid = uncachedRequest (RemoveAllTimelineByArtId aid)
 getAllTimeline name f s o    = do
   arts <- dataFetch (GetAllTimeline name f s o)
   for arts $ \art -> do
-    fillArticleCover =<< fillAllTagName art
+    fillAllTimeline =<< fillArticleCover =<< fillAllTagName art
 
 countTimeline name           = dataFetch (CountTimeline name)
 getAllArticleTimeline aid    = dataFetch (GetAllArticleTimeline aid)
