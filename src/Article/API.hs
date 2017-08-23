@@ -100,7 +100,7 @@ fillArticleCover art = do
   return art { artCover = file }
 
   where cover = artCover art
-        key     = takeWhile (/= '.') $ drop 9 $ firstImage $ artSummary art
+        key   = takeFileKey . firstImage $ artSummary art
 
 updateArticleExtra :: ID -> Value -> ArticleM Int64
 updateArticleExtra artId extra = uncachedRequest (UpdateArticleExtra artId extra)
@@ -160,13 +160,15 @@ toCardItem art = do
         uri | contentLength > 10 = "/t/" ++ show cid ++ ".html"
             | otherwise          = artFromURL art
 
-        takeFileKey = takeWhile (/= '.') . takeFileName . takeWhile (/= '?')
 
         key     = takeFileKey . firstImage $ artSummary art
         cover   = artCover art
         tags    = artTags art
         extra   = artExtra art
         created = artCreatedAt art
+
+takeFileKey :: String -> String
+takeFileKey = takeWhile (/= '.') . takeFileName . takeWhile (/= '?')
 
 addTag               :: TagName -> ArticleM ID
 getTagById           :: ID -> ArticleM (Maybe Tag)
