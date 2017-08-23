@@ -56,6 +56,7 @@ instance ToJSON Article where
                               , "from_url"      .= artFromURL
                               , "from_url_hash" .= artFromURLHash
                               , "tags"          .= artTags
+                              , "timelines"     .= artTimelines
                               , "cover"         .= artCover
                               , "extra"         .= artExtra
                               , "created_at"    .= artCreatedAt
