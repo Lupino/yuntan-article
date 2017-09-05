@@ -198,10 +198,9 @@ removeArticleHandler :: ActionM ()
 removeArticleHandler = do
   artId   <- param "art_id"
 
-  lift $ withTransaction $ do
-    void $ removeArticle artId
-    void $ removeAllArticleTag artId
-    void $ removeAllTimelineByArtId artId
+  lift . void $ removeArticle artId
+  lift . void $ removeAllArticleTag artId
+  lift . void $ removeAllTimelineByArtId artId
 
   resultOK
 

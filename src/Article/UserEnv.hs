@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Article.UserEnv
   (
     UserEnv (..)
@@ -15,12 +13,16 @@ import           Database.MySQL.Simple  (Connection)
 import           Haxl.Core              (GenHaxl)
 import           Haxl.Core.Monad        (unsafeLiftIO)
 import           Web.Scotty.Trans       (ActionT, ScottyT)
+import qualified Yuntan.Types.HasMySQL  as H
 
 data UserEnv = UserEnv { uploadPath  :: FilePath
                        , mySQLPool   :: Pool Connection
-                       , mySQLConn   :: Maybe Connection
                        , tablePrefix :: String
                        }
+
+instance H.HasMySQL UserEnv where
+  mysqlPool = mySQLPool
+  tablePrefix = tablePrefix
 
 type ArticleM = GenHaxl UserEnv
 

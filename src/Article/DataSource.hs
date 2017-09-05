@@ -3,7 +3,6 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeFamilies          #-}
 
@@ -28,7 +27,7 @@ import           Article.DataSource.Table
 import           Article.DataSource.Tag
 import           Article.DataSource.Timeline
 import           Article.Types
-import           Article.UserEnv             (UserEnv (..))
+import           Yuntan.Types.HasMySQL       (HasMySQL, mysqlPool, tablePrefix)
 import           Yuntan.Types.ListResult     (From, Size)
 import           Yuntan.Types.OrderBy        (OrderBy)
 
@@ -145,35 +144,28 @@ instance StateKey ArticleReq where
 instance DataSourceName ArticleReq where
   dataSourceName _ = "ArticleDataSource"
 
-instance DataSource UserEnv ArticleReq where
+instance HasMySQL u => DataSource u ArticleReq where
   fetch = doFetch
 
 doFetch
-  :: State ArticleReq
+  :: HasMySQL u
+  => State ArticleReq
   -> Flags
-  -> UserEnv
+  -> u
   -> [BlockedFetch ArticleReq]
   -> PerformFetch
 
-doFetch _state _flags _user blockedFetches
-  | isJust $ mySQLConn _user = SyncFetch $
-    mapM_ doSync blockedFetches
-  | otherwise = AsyncFetch $ \inner -> do
+doFetch _state _flags _user blockedFetches = AsyncFetch $ \inner -> do
     sem <- newQSem $ numThreads _state
     asyncs <- mapM (fetchAsync sem _user) blockedFetches
     inner
     mapM_ wait asyncs
 
-  where doSync :: BlockedFetch ArticleReq -> IO ()
-        doSync req = fetchSync req prefix conn
-          where conn = fromJust $ mySQLConn _user
-                prefix = tablePrefix _user
-
-fetchAsync :: QSem -> UserEnv -> BlockedFetch ArticleReq -> IO (Async ())
+fetchAsync :: HasMySQL u => QSem -> u -> BlockedFetch ArticleReq -> IO (Async ())
 fetchAsync sem env req = async $
   Control.Exception.bracket_ (waitQSem sem) (signalQSem sem) $ withResource pool $ fetchSync req prefix
 
-  where pool = mySQLPool env
+  where pool = mysqlPool env
         prefix = tablePrefix env
 
 fetchSync :: BlockedFetch ArticleReq -> TablePrefix -> Connection -> IO ()

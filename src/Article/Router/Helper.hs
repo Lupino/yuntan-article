@@ -2,7 +2,6 @@
 module Article.Router.Helper
   (
     pageParam
-  , withTransaction
   , timeline
   , timelineTitle
   , timelineMeta
@@ -21,7 +20,6 @@ import           Control.Monad.Reader    (lift)
 import           Data.Int                (Int64)
 import           Data.Pool               (withResource)
 import           Data.Text.Lazy          (Text)
-import qualified Database.MySQL.Simple   as MySQL (withTransaction)
 import           Haxl.Core               (Env (..), env, initEnv, runHaxl)
 import           Web.Scotty.Trans        (param)
 import           Yuntan.Types.ListResult (From, ListResult (..), Size,
@@ -35,14 +33,6 @@ pageParam = do
   from <- safeParam "from" (0 :: Int64)
   size <- safeParam "size" 10
   return (max ((page - 1) * size) from, size)
-
-withTransaction :: ArticleM a -> ArticleM a
-withTransaction act = do
-  state <- env states
-  ue <- env userEnv
-  liftIO $ withResource (mySQLPool ue) $ \conn -> do
-    env0 <- initEnv state $ ue { mySQLConn = Just conn }
-    MySQL.withTransaction conn $ runHaxl env0 act
 
 timelineMeta :: String -> ActionM (Maybe (Title, Summary))
 timelineMeta = lift . getTimelineMeta

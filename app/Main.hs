@@ -88,7 +88,6 @@ program Options { getConfigFile  = confFile
   let userEnv = UserEnv { mySQLPool   = pool
                         , tablePrefix = prefix
                         , uploadPath  = path
-                        , mySQLConn   = Nothing
                         }
 
   let opts = def { settings = setPort port
