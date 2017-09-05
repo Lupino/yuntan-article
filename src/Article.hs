@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Article
   (
     ArticleM
@@ -6,10 +5,10 @@ module Article
   , module Article.Types
   , module Article.API
 
-  , initGlobalState
+  , initArticleState
   ) where
 
 import           Article.API
-import           Article.DataSource (initGlobalState)
+import           Article.DataSource (initArticleState)
 import           Article.Types
 import           Article.UserEnv    (ArticleM)

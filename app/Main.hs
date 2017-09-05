@@ -10,10 +10,11 @@ import           Web.Scotty.Trans                     (scottyOptsT, settings)
 
 import           Article                              (createTable)
 import           Article.Application
-import           Article.DataSource                   (initGlobalState)
+import           Article.DataSource                   (initArticleState)
 import           Article.UserEnv
 import           Haxl.Core                            (StateStore, initEnv,
-                                                       runHaxl)
+                                                       runHaxl, stateEmpty,
+                                                       stateSet)
 
 import           Network.Wai.Middleware.RequestLogger (logStdout)
 import           Network.Wai.Middleware.Static        (addBase, noDots,
@@ -83,7 +84,7 @@ program Options { getConfigFile  = confFile
 
   pool <- C.genMySQLPool mysqlConfig
 
-  let state = initGlobalState mysqlThreads
+  let state = stateSet (initArticleState mysqlThreads) stateEmpty
 
   let userEnv = UserEnv { mySQLPool   = pool
                         , tablePrefix = prefix

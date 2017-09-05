@@ -8,7 +8,7 @@
 
 module Article.DataSource (
     ArticleReq(..)
-  , initGlobalState
+  , initArticleState
   ) where
 
 import           Data.Hashable               (Hashable (..))
@@ -222,6 +222,5 @@ fetchReq (GetTimelineMeta name)              = getTimelineMeta name
 
 fetchReq CreateTable                         = createTable
 
-initGlobalState :: Int -> StateStore
-initGlobalState threads = stateSet patentState stateEmpty
-  where patentState = ArticleState threads
+initArticleState :: Int -> State ArticleReq
+initArticleState = ArticleState
