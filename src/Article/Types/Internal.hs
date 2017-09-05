@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
 module Article.Types.Internal
   (
     ID
@@ -11,12 +9,14 @@ module Article.Types.Internal
   , CreatedAt
   , FileKey
   , FileBucket
+  , FileExtra
   , TagName
   , TablePrefix
   ) where
 
-import           Data.Int  (Int64)
-import           Data.Text (Text)
+import           Data.Aeson (Value)
+import           Data.Int   (Int64)
+import           Data.Text  (Text)
 
 type ID          = Int64
 type Title       = String
@@ -28,5 +28,7 @@ type CreatedAt   = Int64
 
 type FileKey     = String
 type FileBucket  = String
+type FileExtra   = Value
+
 type TagName     = String
 type TablePrefix = String

@@ -39,32 +39,22 @@ library
                      , Article.Config
   build-depends:       base >= 4.7 && <5.0
                      , mysql-simple
-                     , cryptohash
                      , bytestring
-                     , hex
-                     , aeson
-                     , unordered-containers
-                     , filepath
-                     , directory
-                     , unix-time
-                     , scotty
-                     , mtl
-                     , text
-                     , wai
-                     , mime-types
-                     , containers
-                     , http-types
-
-                     , haxl
-                     , hashable
-                     , resource-pool
-                     , async
-
                      , tagsoup
-
+                     , resource-pool
+                     , text
+                     , haxl
+                     , scotty
                      , yuntan-common
-
-                     , JuicyPixels
+                     , aeson
+                     , hashable
+                     , unix-time
+                     , cryptohash
+                     , hex
+                     , async
+                     , filepath
+                     , mtl
+                     , wai
   default-language:    Haskell2010
 
 executable yuntan-article
@@ -73,16 +63,14 @@ executable yuntan-article
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , yuntan-article
-                     , warp
-                     , streaming-commons
-                     , scotty
-                     , wai-extra
-                     , wai-middleware-static
                      , data-default-class
+                     , streaming-commons
+                     , warp
+                     , scotty
                      , haxl
+                     , wai-extra
                      , yaml
                      , optparse-applicative
-                     , directory
   default-language:    Haskell2010
 
 source-repository head

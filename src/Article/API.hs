@@ -60,8 +60,6 @@ import           Data.Maybe              (isJust)
 import           Article.Utils           (cleanHtml, firstImage)
 import qualified Data.Text               as T (length)
 
-import           Data.ByteString.Lazy    (ByteString)
-
 import           Data.Aeson              (Value)
 import           Yuntan.Types.ListResult (From, Size)
 import           Yuntan.Types.OrderBy    (OrderBy)
@@ -119,11 +117,11 @@ removeArticle artId = uncachedRequest (RemoveArticle artId)
 existsArticle :: HasMySQL u => FromURL -> GenHaxl u (Maybe ID)
 existsArticle u = dataFetch (ExistsArticle u)
 
-uploadFile :: HasMySQL u => FileBucket -> ByteString -> GenHaxl u (Maybe File)
+uploadFile :: HasMySQL u => FileBucket -> FileKey -> GenHaxl u (Maybe File)
 uploadFile path fc = uncachedRequest (UploadFile path fc)
 
 
-uploadFileWithExtra :: HasMySQL u => FileBucket -> ByteString -> FileExtra -> GenHaxl u (Maybe File)
+uploadFileWithExtra :: HasMySQL u => FileBucket -> FileKey -> FileExtra -> GenHaxl u (Maybe File)
 uploadFileWithExtra path fc extra = uncachedRequest (UploadFileWithExtra path fc extra)
 
 getFileWithKey :: HasMySQL u => FileKey -> GenHaxl u (Maybe File)

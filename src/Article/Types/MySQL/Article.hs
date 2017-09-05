@@ -10,7 +10,7 @@ import           Data.Aeson                         (ToJSON (..), Value (..),
                                                      decodeStrict, object, (.=))
 import           Database.MySQL.Simple.QueryResults (QueryResults, convertError,
                                                      convertResults)
-import           Database.MySQL.Simple.Result       (Result, convert)
+import           Database.MySQL.Simple.Result       (convert)
 
 import           Data.Maybe                         (fromMaybe)
 
@@ -42,7 +42,7 @@ instance QueryResults Article where
             !artFromURL     = convert fe ve
             !artFromURLHash = convert ff vf
             !artCover       = convert fg vg
-            !artExtra       = convert fh vh
+            !artExtra       = fromMaybe Null . decodeStrict $ convert fh vh
             !artCreatedAt   = convert fi vi
             artTags         = []
             artTimelines    = []
@@ -64,7 +64,3 @@ instance ToJSON Article where
 
 instance Created Article where
   createdAt = artCreatedAt
-
-instance Result Value where
-  convert _ (Just bs) = fromMaybe Null (decodeStrict bs)
-  convert _ Nothing   = Null

@@ -14,13 +14,10 @@ module Article.Router.Helper
   ) where
 
 import           Article
-import           Article.UserEnv         (ActionM, UserEnv (..))
-import           Control.Monad.IO.Class  (liftIO)
+import           Article.UserEnv         (ActionM)
 import           Control.Monad.Reader    (lift)
 import           Data.Int                (Int64)
-import           Data.Pool               (withResource)
 import           Data.Text.Lazy          (Text)
-import           Haxl.Core               (Env (..), env, initEnv, runHaxl)
 import           Web.Scotty.Trans        (param)
 import           Yuntan.Types.ListResult (From, ListResult (..), Size,
                                           emptyListResult)

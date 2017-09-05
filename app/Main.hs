@@ -17,10 +17,6 @@ import           Haxl.Core                            (StateStore, initEnv,
                                                        stateSet)
 
 import           Network.Wai.Middleware.RequestLogger (logStdout)
-import           Network.Wai.Middleware.Static        (addBase, noDots,
-                                                       staticPolicy, (>->))
-
-import           System.Directory                     (createDirectoryIfMissing)
 
 import qualified Article.Config                       as C
 import qualified Data.Yaml                            as Y
@@ -32,7 +28,6 @@ data Options = Options { getConfigFile  :: String
                        , getHost        :: String
                        , getPort        :: Int
                        , getTablePrefix :: String
-                       , getStaticPath  :: String
                        }
 
 parser :: Parser Options
@@ -55,10 +50,6 @@ parser = Options <$> strOption (long "config"
                                 <> metavar "TABLE_PREFIX"
                                 <> help "table prefix."
                                 <> value "test")
-                 <*> strOption (long "root"
-                                <> metavar "ROOT"
-                                <> help "resource root."
-                                <> value "public")
 
 main :: IO ()
 main = execParser opts >>= program
@@ -73,10 +64,8 @@ program Options { getConfigFile  = confFile
                 , getTablePrefix = prefix
                 , getHost        = host
                 , getPort        = port
-                , getStaticPath  = path
                 } = do
 
-  createDirectoryIfMissing True path
   (Just conf) <- Y.decodeFile confFile :: IO (Maybe C.Config)
 
   let mysqlConfig  = C.mysqlConfig conf
@@ -88,7 +77,6 @@ program Options { getConfigFile  = confFile
 
   let userEnv = UserEnv { mySQLPool   = pool
                         , tablePrefix = prefix
-                        , uploadPath  = path
                         }
 
   let opts = def { settings = setPort port
@@ -96,11 +84,9 @@ program Options { getConfigFile  = confFile
 
   _ <- runIO userEnv state createTable
 
-  scottyOptsT opts (runIO userEnv state) $ application [logStdout, staticMid]
+  scottyOptsT opts (runIO userEnv state) $ application [logStdout]
   where
         runIO :: UserEnv -> StateStore -> ArticleM b -> IO b
         runIO env s m = do
           env0 <- initEnv s env
           runHaxl env0 m
-
-        staticMid = staticPolicy (noDots >-> addBase path)

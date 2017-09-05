@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Article.Router.Handler
   (
-    uploadHandler
+    saveFileHandler
   , getFileHandler
   , createArticleHandler
   , updateArticleHandler
@@ -30,98 +30,40 @@ module Article.Router.Handler
   ) where
 
 import           Control.Monad           (void)
-import           Control.Monad.IO.Class  (liftIO)
 import           Control.Monad.Reader    (lift)
-import           Haxl.Core               (Env (..), env)
 
 import           Data.Aeson              (Value (..), decode, object, (.=))
-import           Data.Map                as Map (lookup)
-import           Data.Maybe              (fromJust, fromMaybe, isJust)
-import           Network.HTTP.Types      (status404)
-import           Network.Mime            (defaultMimeMap, fileNameExtensions)
-import           Web.Scotty.Trans        (body, json, param, raw, setHeader,
-                                          status)
+import           Data.Maybe              (fromMaybe, isJust)
+import           Web.Scotty.Trans        (json, param, rescue)
 
-import           Control.Exception       (SomeException, try)
-import qualified Data.ByteString.Char8   as BS (unpack)
-import qualified Data.ByteString.Lazy    as LB (ByteString, empty, length,
-                                                readFile, toStrict)
-import qualified Data.Text               as T (Text, length, pack, unpack)
-import qualified Data.Text.Lazy          as LT (pack)
+import qualified Data.Text               as T (Text, length)
 
 
 import           Article
 import           Article.Router.Helper
-import           Article.UserEnv         (ActionM, UserEnv (..))
-import           Article.Utils           (getImageShape)
+import           Article.UserEnv         (ActionM)
 import           Yuntan.Types.ListResult (ListResult (getResult), merge)
 import           Yuntan.Utils.JSON       (differenceValue, unionValue)
-import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound, ok,
-                                          okListResult, safeParam)
+import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
+                                          maybeNotFound, ok, okListResult,
+                                          safeParam)
 
-import           System.Directory        (doesFileExist)
-import           System.FilePath         (dropExtension, (<.>), (</>))
 import           Yuntan.Utils.Haxl       (runWithEnv)
 
-getMineType :: T.Text -> (String, String)
-getMineType =
-  go . fileNameExtensions
-  where go :: [T.Text] -> (String, String)
-        go [] = ("", "")
-        go (e:es) =
-          case Map.lookup e defaultMimeMap of
-            Nothing -> if null es then (T.unpack e, "") else go es
-            Just mt -> (T.unpack e, BS.unpack mt)
+saveFileHandler :: ActionM ()
+saveFileHandler = do
+  bucket <- param "bucket" `rescue` (\_ -> return "upload")
+  key <- param "key"
+  extra <- decode <$> (param "extra" `rescue` (\_ -> return "null"))
 
-getFileExtra :: String -> LB.ByteString -> Maybe (Int, Int)-> FileExtra
-getFileExtra fn fc shape = fileExtraEmpty { fileSize   = size
-                                          , fileType   = mt
-                                          , fileExt    = ext
-                                          , fileName   = fn
-                                          , fileWidth  = w
-                                          , fileHeight = h
-                                          }
-  where size = LB.length fc
-        fn' = T.pack fn
-        (ext, mt) = getMineType fn'
-        w | isJust shape = Just $ (fst . fromJust) shape
-          | otherwise    = Nothing
-
-        h | isJust shape = Just $ (snd . fromJust) shape
-          | otherwise    = Nothing
-
-uploadHandler :: ActionM ()
-uploadHandler = do
-  fn <- safeParam "fileName" "xxxx.xx"
-  wb <- body
-
-  path <- lift $ uploadPath <$> env userEnv
-
-  e <- liftIO (try . return . getImageShape $ LB.toStrict wb :: IO (Either SomeException (Maybe (Int, Int))))
-
-  let shape = case e of
-                Left _       -> Nothing
-                Right shape' -> shape'
-
-  fileObj <- lift $ uploadFileWithExtra path wb (getFileExtra fn wb shape)
+  fileObj <- lift $ uploadFileWithExtra bucket key (fromMaybe Null extra)
   json fileObj
 
 getFileHandler :: ActionM ()
 getFileHandler = do
-  fn <- param "fileName"
-  path <- lift $ uploadPath <$> env userEnv
-
-  file <- lift $ getFileWithKey (dropExtension fn)
-
-  case file of
-    Nothing -> status status404 >> raw LB.empty
-    Just f  -> do
-      setHeader "Content-Type" . LT.pack . fileType $ fileExtra f
-
-      let filePath = path </> fileKey f <.> fileExt (fileExtra f)
-      fileExists <- liftIO $ doesFileExist filePath
-      if fileExists then raw =<< liftIO (LB.readFile filePath)
-                    else status status404 >> raw LB.empty
+  key <- param "key"
+  file <- lift $ getFileWithKey key
+  maybeNotFound "File" file
 
 createArticleHandler :: ActionM ()
 createArticleHandler = do

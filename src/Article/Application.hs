@@ -4,7 +4,7 @@ module Article.Application
     application
   ) where
 
-import           Web.Scotty.Trans (delete, get, middleware, post, put)
+import           Web.Scotty.Trans (delete, get, middleware, post)
 
 import           Network.Wai      (Middleware)
 
@@ -14,8 +14,6 @@ import           Article.UserEnv  (ScottyM)
 application :: [Middleware] -> ScottyM ()
 application mids = do
   mapM_ middleware mids
-
-  put    "/api/upload/"                      uploadHandler
 
   post   "/api/articles/"                    createArticleHandler
   post   "/api/articles/:art_id/"            $ requireArticle updateArticleHandler
@@ -45,4 +43,5 @@ application mids = do
 
   get    "/api/check/"                       existsArticleHandler
 
-  get    "/api/file/:fileName"               getFileHandler
+  get    "/api/file/:key"                    getFileHandler
+  post   "/api/file/:key"                    saveFileHandler

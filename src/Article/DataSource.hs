@@ -16,10 +16,8 @@ import           Data.Typeable               (Typeable)
 import           Haxl.Core                   (BlockedFetch (..), DataSource,
                                               DataSourceName, Flags,
                                               PerformFetch (..), ShowP, State,
-                                              StateKey, StateStore,
-                                              dataSourceName, fetch, putFailure,
-                                              putSuccess, showp, stateEmpty,
-                                              stateSet)
+                                              StateKey, dataSourceName, fetch,
+                                              putFailure, putSuccess, showp)
 
 import           Article.DataSource.Article
 import           Article.DataSource.File
@@ -33,14 +31,12 @@ import           Yuntan.Types.OrderBy        (OrderBy)
 
 import qualified Control.Exception           (SomeException, bracket_, try)
 import           Data.Aeson                  (Value (..))
-import qualified Data.ByteString.Lazy        as LB (ByteString)
 import           Data.Int                    (Int64)
 import           Data.Pool                   (withResource)
 import           Database.MySQL.Simple       (Connection)
 
 import           Control.Concurrent.Async
 import           Control.Concurrent.QSem
-import           Data.Maybe                  (fromJust, isJust)
 
 -- Data source implementation.
 
@@ -57,8 +53,8 @@ data ArticleReq a where
   CountAllArticle      :: ArticleReq Int64
   RemoveArticle        :: ID -> ArticleReq Int64
 
-  UploadFile           :: FileBucket -> LB.ByteString -> ArticleReq (Maybe File)
-  UploadFileWithExtra  :: FileBucket -> LB.ByteString -> FileExtra -> ArticleReq (Maybe File)
+  UploadFile           :: FileBucket -> FileKey -> ArticleReq (Maybe File)
+  UploadFileWithExtra  :: FileBucket -> FileKey -> FileExtra -> ArticleReq (Maybe File)
   GetFileWithKey       :: FileKey -> ArticleReq (Maybe File)
   GetFileById          :: ID -> ArticleReq (Maybe File)
   GetFiles             :: [ID] -> ArticleReq [File]
