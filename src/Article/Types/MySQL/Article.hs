@@ -8,11 +8,10 @@ module Article.Types.MySQL.Article
 
 import           Data.Aeson                         (ToJSON (..), Value (..),
                                                      decodeStrict, object, (.=))
+import           Data.Maybe                         (fromMaybe)
 import           Database.MySQL.Simple.QueryResults (QueryResults, convertError,
                                                      convertResults)
 import           Database.MySQL.Simple.Result       (convert)
-
-import           Data.Maybe                         (fromMaybe)
 
 import           Article.Types.Class
 import           Article.Types.Internal
@@ -42,7 +41,7 @@ instance QueryResults Article where
             !artFromURL     = convert fe ve
             !artFromURLHash = convert ff vf
             !artCover       = convert fg vg
-            !artExtra       = fromMaybe Null . decodeStrict $ convert fh vh
+            !artExtra       = fromMaybe Null . decodeStrict $ fromMaybe "{}" vh
             !artCreatedAt   = convert fi vi
             artTags         = []
             artTimelines    = []

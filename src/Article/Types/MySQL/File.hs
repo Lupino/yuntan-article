@@ -42,7 +42,7 @@ instance QueryResults File where
       where !fileID        = convert fa va
             !fileKey       = convert fb vb
             !fileBucket    = convert fc vc
-            !fileExtra     = fromMaybe Null . decodeStrict $ convert fd vd
+            !fileExtra     = fromMaybe Null . decodeStrict $ fromMaybe "{}" vd
             !fileCreatedAt = convert fe ve
     convertResults fs vs  = convertError fs vs 2
 
