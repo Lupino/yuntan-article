@@ -56,7 +56,7 @@ saveFileHandler = do
   key <- param "key"
   extra <- decode <$> (param "extra" `rescue` (\_ -> return "null"))
 
-  fileObj <- lift $ uploadFileWithExtra bucket key (fromMaybe Null extra)
+  fileObj <- lift $ saveFileWithExtra bucket key (fromMaybe Null extra)
   json fileObj
 
 getFileHandler :: ActionM ()

@@ -14,8 +14,8 @@ module Article.API
   , removeArticle
   , existsArticle
 
-  , uploadFile
-  , uploadFileWithExtra
+  , saveFile
+  , saveFileWithExtra
   , getFileWithKey
   , getFileById
   , getFiles
@@ -117,12 +117,12 @@ removeArticle artId = uncachedRequest (RemoveArticle artId)
 existsArticle :: HasMySQL u => FromURL -> GenHaxl u (Maybe ID)
 existsArticle u = dataFetch (ExistsArticle u)
 
-uploadFile :: HasMySQL u => FileBucket -> FileKey -> GenHaxl u (Maybe File)
-uploadFile path fc = uncachedRequest (UploadFile path fc)
+saveFile :: HasMySQL u => FileBucket -> FileKey -> GenHaxl u (Maybe File)
+saveFile path fc = uncachedRequest (SaveFile path fc)
 
 
-uploadFileWithExtra :: HasMySQL u => FileBucket -> FileKey -> FileExtra -> GenHaxl u (Maybe File)
-uploadFileWithExtra path fc extra = uncachedRequest (UploadFileWithExtra path fc extra)
+saveFileWithExtra :: HasMySQL u => FileBucket -> FileKey -> FileExtra -> GenHaxl u (Maybe File)
+saveFileWithExtra path fc extra = uncachedRequest (SaveFileWithExtra path fc extra)
 
 getFileWithKey :: HasMySQL u => FileKey -> GenHaxl u (Maybe File)
 getFileWithKey k = dataFetch (GetFileWithKey k)

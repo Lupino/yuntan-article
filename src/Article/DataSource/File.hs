@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Article.DataSource.File
   (
-    uploadFile
-  , uploadFileWithExtra
+    saveFile
+  , saveFileWithExtra
   , getFile
   , getFiles
   , getFileWithKey
@@ -33,8 +33,8 @@ getFiles :: [ID] -> TablePrefix -> Connection -> IO [File]
 getFiles ids prefix conn = query conn sql $ Only (In ids)
   where sql = fromString $ concat [ "SELECT * FROM `", prefix, "_files` WHERE `id` in ?" ]
 
-uploadFile :: FileBucket -> FileKey -> TablePrefix -> Connection -> IO (Maybe File)
-uploadFile bucket key prefix conn = do
+saveFile :: FileBucket -> FileKey -> TablePrefix -> Connection -> IO (Maybe File)
+saveFile bucket key prefix conn = do
   file <- getFileWithKey key prefix conn
   case file of
     (Just f) -> return (Just f)
@@ -44,8 +44,8 @@ uploadFile bucket key prefix conn = do
       getFileWithKey key prefix conn
   where sql = fromString $ concat [ "INSERT INTO `", prefix, "_files` (`key`, `bucket`, `created_at`) VALUES ( ?, ?, ? )" ]
 
-uploadFileWithExtra :: FileBucket -> FileKey -> FileExtra -> TablePrefix -> Connection -> IO (Maybe File)
-uploadFileWithExtra bucket key extra prefix conn = do
+saveFileWithExtra :: FileBucket -> FileKey -> FileExtra -> TablePrefix -> Connection -> IO (Maybe File)
+saveFileWithExtra bucket key extra prefix conn = do
   file <- getFileWithKey key prefix conn
   case file of
     (Just f) -> return (Just f)

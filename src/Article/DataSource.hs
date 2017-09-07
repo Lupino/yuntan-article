@@ -53,8 +53,8 @@ data ArticleReq a where
   CountAllArticle      :: ArticleReq Int64
   RemoveArticle        :: ID -> ArticleReq Int64
 
-  UploadFile           :: FileBucket -> FileKey -> ArticleReq (Maybe File)
-  UploadFileWithExtra  :: FileBucket -> FileKey -> FileExtra -> ArticleReq (Maybe File)
+  SaveFile             :: FileBucket -> FileKey -> ArticleReq (Maybe File)
+  SaveFileWithExtra    :: FileBucket -> FileKey -> FileExtra -> ArticleReq (Maybe File)
   GetFileWithKey       :: FileKey -> ArticleReq (Maybe File)
   GetFileById          :: ID -> ArticleReq (Maybe File)
   GetFiles             :: [ID] -> ArticleReq [File]
@@ -88,47 +88,47 @@ data ArticleReq a where
 
 deriving instance Eq (ArticleReq a)
 instance Hashable (ArticleReq a) where
-  hashWithSalt s (CreateArticle a b c d e)       = hashWithSalt s (0::Int, a, b, c, d, e)
-  hashWithSalt s (GetArticleById a)              = hashWithSalt s (1::Int, a)
-  hashWithSalt s (UpdateArticle a b c d)         = hashWithSalt s (2::Int, a, b, c, d)
-  hashWithSalt s (UpdateArticleTitle a b)        = hashWithSalt s (3::Int, a, b)
-  hashWithSalt s (UpdateArticleSummary a b)      = hashWithSalt s (4::Int, a, b)
-  hashWithSalt s (UpdateArticleContent a b)      = hashWithSalt s (5::Int, a, b)
-  hashWithSalt s (UpdateArticleCover a b)        = hashWithSalt s (6::Int, a, b)
-  hashWithSalt s (UpdateArticleExtra a b)        = hashWithSalt s (7::Int, a, b)
-  hashWithSalt s (GetAllArticle a b c)           = hashWithSalt s (8::Int, a, b, c)
-  hashWithSalt s CountAllArticle                 = hashWithSalt s (9::Int)
-  hashWithSalt s (RemoveArticle a)               = hashWithSalt s (10::Int, a)
+  hashWithSalt s (CreateArticle a b c d e)    = hashWithSalt s (0::Int, a, b, c, d, e)
+  hashWithSalt s (GetArticleById a)           = hashWithSalt s (1::Int, a)
+  hashWithSalt s (UpdateArticle a b c d)      = hashWithSalt s (2::Int, a, b, c, d)
+  hashWithSalt s (UpdateArticleTitle a b)     = hashWithSalt s (3::Int, a, b)
+  hashWithSalt s (UpdateArticleSummary a b)   = hashWithSalt s (4::Int, a, b)
+  hashWithSalt s (UpdateArticleContent a b)   = hashWithSalt s (5::Int, a, b)
+  hashWithSalt s (UpdateArticleCover a b)     = hashWithSalt s (6::Int, a, b)
+  hashWithSalt s (UpdateArticleExtra a b)     = hashWithSalt s (7::Int, a, b)
+  hashWithSalt s (GetAllArticle a b c)        = hashWithSalt s (8::Int, a, b, c)
+  hashWithSalt s CountAllArticle              = hashWithSalt s (9::Int)
+  hashWithSalt s (RemoveArticle a)            = hashWithSalt s (10::Int, a)
 
-  hashWithSalt s (UploadFile a b)                = hashWithSalt s (11::Int, a, b)
-  hashWithSalt s (UploadFileWithExtra a b c)     = hashWithSalt s (12::Int, a, b, c)
-  hashWithSalt s (GetFileWithKey a)              = hashWithSalt s (13::Int, a)
-  hashWithSalt s (GetFileById a)                 = hashWithSalt s (14::Int, a)
-  hashWithSalt s (GetFiles a)                    = hashWithSalt s (15::Int, a)
-  hashWithSalt s (ExistsArticle a)               = hashWithSalt s (16::Int, a)
+  hashWithSalt s (SaveFile a b)               = hashWithSalt s (11::Int, a, b)
+  hashWithSalt s (SaveFileWithExtra a b c)    = hashWithSalt s (12::Int, a, b, c)
+  hashWithSalt s (GetFileWithKey a)           = hashWithSalt s (13::Int, a)
+  hashWithSalt s (GetFileById a)              = hashWithSalt s (14::Int, a)
+  hashWithSalt s (GetFiles a)                 = hashWithSalt s (15::Int, a)
+  hashWithSalt s (ExistsArticle a)            = hashWithSalt s (16::Int, a)
 
-  hashWithSalt s (AddTag a)                      = hashWithSalt s (17::Int, a)
-  hashWithSalt s (GetTagById a)                  = hashWithSalt s (18::Int, a)
-  hashWithSalt s (GetTagByName a)                = hashWithSalt s (19::Int, a)
-  hashWithSalt s (GetTags a b c)                 = hashWithSalt s (20::Int, a, b, c)
-  hashWithSalt s (UpdateTag a b)                 = hashWithSalt s (21::Int, a, b)
-  hashWithSalt s (AddArticleTag a b)             = hashWithSalt s (22::Int, a, b)
-  hashWithSalt s (RemoveArticleTag a b)          = hashWithSalt s (23::Int, a, b)
-  hashWithSalt s (RemoveAllArticleTag a)         = hashWithSalt s (24::Int, a)
-  hashWithSalt s (GetAllArticleTagName a)        = hashWithSalt s (25::Int, a)
+  hashWithSalt s (AddTag a)                   = hashWithSalt s (17::Int, a)
+  hashWithSalt s (GetTagById a)               = hashWithSalt s (18::Int, a)
+  hashWithSalt s (GetTagByName a)             = hashWithSalt s (19::Int, a)
+  hashWithSalt s (GetTags a b c)              = hashWithSalt s (20::Int, a, b, c)
+  hashWithSalt s (UpdateTag a b)              = hashWithSalt s (21::Int, a, b)
+  hashWithSalt s (AddArticleTag a b)          = hashWithSalt s (22::Int, a, b)
+  hashWithSalt s (RemoveArticleTag a b)       = hashWithSalt s (23::Int, a, b)
+  hashWithSalt s (RemoveAllArticleTag a)      = hashWithSalt s (24::Int, a)
+  hashWithSalt s (GetAllArticleTagName a)     = hashWithSalt s (25::Int, a)
 
-  hashWithSalt s (AddTimeline a b)               = hashWithSalt s (26::Int, a, b)
-  hashWithSalt s (RemoveTimeline a b)            = hashWithSalt s (27::Int, a, b)
-  hashWithSalt s (RemoveAllTimeline a)           = hashWithSalt s (28::Int, a)
-  hashWithSalt s (RemoveAllTimelineByArtId a)    = hashWithSalt s (29::Int, a)
-  hashWithSalt s (GetAllTimeline a b c d)        = hashWithSalt s (30::Int, a, b, c, d)
-  hashWithSalt s (GetAllArticleTimeline a)       = hashWithSalt s (31::Int, a)
-  hashWithSalt s (CountTimeline a)               = hashWithSalt s (32::Int, a)
-  hashWithSalt s (SaveTimelineMeta a b c)        = hashWithSalt s (33::Int, a, b, c)
-  hashWithSalt s (RemoveTimelineMeta a)          = hashWithSalt s (34::Int, a)
-  hashWithSalt s (GetTimelineMeta a)             = hashWithSalt s (35::Int, a)
+  hashWithSalt s (AddTimeline a b)            = hashWithSalt s (26::Int, a, b)
+  hashWithSalt s (RemoveTimeline a b)         = hashWithSalt s (27::Int, a, b)
+  hashWithSalt s (RemoveAllTimeline a)        = hashWithSalt s (28::Int, a)
+  hashWithSalt s (RemoveAllTimelineByArtId a) = hashWithSalt s (29::Int, a)
+  hashWithSalt s (GetAllTimeline a b c d)     = hashWithSalt s (30::Int, a, b, c, d)
+  hashWithSalt s (GetAllArticleTimeline a)    = hashWithSalt s (31::Int, a)
+  hashWithSalt s (CountTimeline a)            = hashWithSalt s (32::Int, a)
+  hashWithSalt s (SaveTimelineMeta a b c)     = hashWithSalt s (33::Int, a, b, c)
+  hashWithSalt s (RemoveTimelineMeta a)       = hashWithSalt s (34::Int, a)
+  hashWithSalt s (GetTimelineMeta a)          = hashWithSalt s (35::Int, a)
 
-  hashWithSalt s CreateTable                     = hashWithSalt s (36::Int)
+  hashWithSalt s CreateTable                  = hashWithSalt s (36::Int)
 
 
 deriving instance Show (ArticleReq a)
@@ -172,51 +172,51 @@ fetchSync (BlockedFetch req rvar) prefix conn = do
     Right a -> putSuccess rvar a
 
 fetchReq :: ArticleReq a -> TablePrefix -> Connection -> IO a
-fetchReq (CreateArticle t s co f c)          = createArticle t s co f c
+fetchReq (CreateArticle t s co f c)        = createArticle t s co f c
 
-fetchReq (GetArticleById artId)              = getArticle artId
+fetchReq (GetArticleById artId)            = getArticle artId
 
-fetchReq (UpdateArticle artId t s c)         = updateArticle artId t s c
-fetchReq (UpdateArticleTitle artId t)        = updateArticleTitle artId t
-fetchReq (UpdateArticleSummary artId s)      = updateArticleSummary artId s
-fetchReq (UpdateArticleContent artId c)      = updateArticleContent artId c
-fetchReq (UpdateArticleCover artId c)        = updateArticleCover artId c
-fetchReq (UpdateArticleExtra artId e)        = updateArticleExtra artId e
+fetchReq (UpdateArticle artId t s c)       = updateArticle artId t s c
+fetchReq (UpdateArticleTitle artId t)      = updateArticleTitle artId t
+fetchReq (UpdateArticleSummary artId s)    = updateArticleSummary artId s
+fetchReq (UpdateArticleContent artId c)    = updateArticleContent artId c
+fetchReq (UpdateArticleCover artId c)      = updateArticleCover artId c
+fetchReq (UpdateArticleExtra artId e)      = updateArticleExtra artId e
 
-fetchReq (RemoveArticle artId)               = removeArticle artId
-fetchReq (GetAllArticle f s o)               = getAllArticle f s o
-fetchReq CountAllArticle                     = countAllArticle
+fetchReq (RemoveArticle artId)             = removeArticle artId
+fetchReq (GetAllArticle f s o)             = getAllArticle f s o
+fetchReq CountAllArticle                   = countAllArticle
 
-fetchReq (UploadFile path fc)                = uploadFile path fc
-fetchReq (UploadFileWithExtra path fc extra) = uploadFileWithExtra path fc extra
-fetchReq (GetFileWithKey key)                = getFileWithKey key
-fetchReq (GetFileById fileId)                = getFile fileId
-fetchReq (GetFiles fileIds)                  = getFiles fileIds
+fetchReq (SaveFile path fc)                = saveFile path fc
+fetchReq (SaveFileWithExtra path fc extra) = saveFileWithExtra path fc extra
+fetchReq (GetFileWithKey key)              = getFileWithKey key
+fetchReq (GetFileById fileId)              = getFile fileId
+fetchReq (GetFiles fileIds)                = getFiles fileIds
 
-fetchReq (ExistsArticle u)                   = existsArticle u
+fetchReq (ExistsArticle u)                 = existsArticle u
 
-fetchReq (AddTag name)                       = addTag name
-fetchReq (GetTagById tid)                    = getTagById tid
-fetchReq (GetTagByName name)                 = getTagByName name
-fetchReq (GetTags f s o)                     = getTags f s o
-fetchReq (UpdateTag tid name)                = updateTag tid name
-fetchReq (AddArticleTag aid tid)             = addArticleTag aid tid
-fetchReq (RemoveArticleTag aid tid)          = removeArticleTag aid tid
-fetchReq (RemoveAllArticleTag aid)           = removeAllArticleTag aid
-fetchReq (GetAllArticleTagName aid)          = getAllArticleTagName aid
+fetchReq (AddTag name)                     = addTag name
+fetchReq (GetTagById tid)                  = getTagById tid
+fetchReq (GetTagByName name)               = getTagByName name
+fetchReq (GetTags f s o)                   = getTags f s o
+fetchReq (UpdateTag tid name)              = updateTag tid name
+fetchReq (AddArticleTag aid tid)           = addArticleTag aid tid
+fetchReq (RemoveArticleTag aid tid)        = removeArticleTag aid tid
+fetchReq (RemoveAllArticleTag aid)         = removeAllArticleTag aid
+fetchReq (GetAllArticleTagName aid)        = getAllArticleTagName aid
 
-fetchReq (AddTimeline name aid)              = addTimeline name aid
-fetchReq (RemoveTimeline name aid)           = removeTimeline name aid
-fetchReq (RemoveAllTimeline name)            = removeAllTimeline name
-fetchReq (RemoveAllTimelineByArtId aid)      = removeAllTimelineByArtId aid
-fetchReq (GetAllTimeline name f s o)         = getAllTimeline name f s o
-fetchReq (CountTimeline name)                = countTimeline name
-fetchReq (GetAllArticleTimeline aid)         = getAllArticleTimeline aid
-fetchReq (SaveTimelineMeta name t s)         = saveTimelineMeta name t s
-fetchReq (RemoveTimelineMeta name)           = removeTimelineMeta name
-fetchReq (GetTimelineMeta name)              = getTimelineMeta name
+fetchReq (AddTimeline name aid)            = addTimeline name aid
+fetchReq (RemoveTimeline name aid)         = removeTimeline name aid
+fetchReq (RemoveAllTimeline name)          = removeAllTimeline name
+fetchReq (RemoveAllTimelineByArtId aid)    = removeAllTimelineByArtId aid
+fetchReq (GetAllTimeline name f s o)       = getAllTimeline name f s o
+fetchReq (CountTimeline name)              = countTimeline name
+fetchReq (GetAllArticleTimeline aid)       = getAllArticleTimeline aid
+fetchReq (SaveTimelineMeta name t s)       = saveTimelineMeta name t s
+fetchReq (RemoveTimelineMeta name)         = removeTimelineMeta name
+fetchReq (GetTimelineMeta name)            = getTimelineMeta name
 
-fetchReq CreateTable                         = createTable
+fetchReq CreateTable                       = createTable
 
 initArticleState :: Int -> State ArticleReq
 initArticleState = ArticleState
