@@ -1,8 +1,6 @@
 module Article
   (
-    ArticleM
-
-  , module Article.Types
+    module Article.Types
   , module Article.API
 
   , initArticleState
@@ -11,4 +9,3 @@ module Article
 import           Article.API
 import           Article.DataSource (initArticleState)
 import           Article.Types
-import           Article.UserEnv    (ArticleM)
