@@ -14,35 +14,36 @@ module Article.Router.Helper
   ) where
 
 import           Article
-import           Article.UserEnv         (ActionM)
 import           Control.Monad.Reader    (lift)
 import           Data.Int                (Int64)
 import           Data.Text.Lazy          (Text)
+import           Haxl.Core               (GenHaxl)
 import           Web.Scotty.Trans        (param)
+import           Yuntan.Types.HasMySQL   (HasMySQL)
 import           Yuntan.Types.ListResult (From, ListResult (..), Size,
                                           emptyListResult)
 import           Yuntan.Types.OrderBy    (desc)
-import           Yuntan.Utils.Scotty     (errNotFound, ok, safeParam)
+import           Yuntan.Utils.Scotty     (ActionH, errNotFound, ok, safeParam)
 
-pageParam :: ActionM (Int64, Int64)
+pageParam :: ActionH u (Int64, Int64)
 pageParam = do
   page <- safeParam "page" (1 :: Int64)
   from <- safeParam "from" (0 :: Int64)
   size <- safeParam "size" 10
   return (max ((page - 1) * size) from, size)
 
-timelineMeta :: String -> ActionM (Maybe (Title, Summary))
+timelineMeta :: HasMySQL u => String -> ActionH u (Maybe (Title, Summary))
 timelineMeta = lift . getTimelineMeta
 
-timelineTitle :: String -> ActionM Title
+timelineTitle :: HasMySQL u => String -> ActionH u Title
 timelineTitle name = maybe name fst <$> timelineMeta name
 
-timeline :: String -> ActionM (ListResult Article)
+timeline :: HasMySQL u => String -> ActionH u (ListResult Article)
 timeline name = articles' s t
   where s = flip' (getAllTimeline name) $ desc "art_id"
         t = countTimeline name
 
-articles :: ActionM (ListResult Article)
+articles :: HasMySQL u => ActionH u (ListResult Article)
 articles = articles' s t
   where s = flip' getAllArticle $ desc "id"
         t = countAllArticle
@@ -52,7 +53,7 @@ flip' f = g
   where g c a b = f a b c
 
 
-articles' :: (From -> Size -> ArticleM [Article]) -> ArticleM Int64 -> ActionM (ListResult Article)
+articles' :: HasMySQL u => (From -> Size -> GenHaxl u [Article]) -> GenHaxl u Int64 -> ActionH u (ListResult Article)
 articles' s t = do
   (from, size) <- pageParam
   lift $ do
@@ -65,12 +66,12 @@ articles' s t = do
                            , getTotal  = total
                            }
 
-article :: ActionM (Maybe Article)
+article :: HasMySQL u => ActionH u (Maybe Article)
 article = do
   aid <- param "art_id"
   lift $ getArticleById aid
 
-requireArticle :: (Article -> ActionM ()) -> ActionM ()
+requireArticle :: HasMySQL u => (Article -> ActionH u ()) -> ActionH u ()
 requireArticle action = do
   artId <- param "art_id"
 
@@ -79,7 +80,7 @@ requireArticle action = do
 
   where notFound artId = errNotFound $ concat [ "Article (", show artId, ") not found" ]
 
-requireTag :: (Tag -> ActionM ()) -> ActionM ()
+requireTag :: HasMySQL u => (Tag -> ActionH u ()) -> ActionH u ()
 requireTag action = do
   tid <- safeParam "tag_id" (0::ID)
   name <- safeParam "tag" (""::String)
@@ -94,8 +95,8 @@ requireTag action = do
 merge :: Monad m => ((a -> m ()) -> m ()) -> ((b -> m ()) -> m ()) -> (a -> b -> m ()) -> m ()
 merge f g t = f $ \a -> g $ \b -> t a b
 
-requireTagAndArticle :: (Tag -> Article -> ActionM ()) -> ActionM ()
+requireTagAndArticle :: HasMySQL u => (Tag -> Article -> ActionH u ()) -> ActionH u ()
 requireTagAndArticle = merge requireTag requireArticle
 
-resultOK :: ActionM ()
+resultOK :: ActionH u ()
 resultOK = ok "result" ("OK" :: Text)

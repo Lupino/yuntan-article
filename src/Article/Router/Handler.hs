@@ -41,16 +41,16 @@ import qualified Data.Text               as T (Text, length)
 
 import           Article
 import           Article.Router.Helper
-import           Article.UserEnv         (ActionM)
 import           Yuntan.Types.ListResult (ListResult (getResult), merge)
 import           Yuntan.Utils.JSON       (differenceValue, unionValue)
-import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
+import           Yuntan.Utils.Scotty     (ActionH, errBadRequest, errNotFound,
                                           maybeNotFound, ok, okListResult,
                                           safeParam)
 
+import           Yuntan.Types.HasMySQL   (HasMySQL)
 import           Yuntan.Utils.Haxl       (runWithEnv)
 
-saveFileHandler :: ActionM ()
+saveFileHandler :: HasMySQL u => ActionH u ()
 saveFileHandler = do
   bucket <- param "bucket" `rescue` (\_ -> return "upload")
   key <- param "key"
@@ -59,13 +59,13 @@ saveFileHandler = do
   fileObj <- lift $ saveFileWithExtra bucket key (fromMaybe Null extra)
   json fileObj
 
-getFileHandler :: ActionM ()
+getFileHandler :: HasMySQL u => ActionH u ()
 getFileHandler = do
   key <- param "key"
   file <- lift $ getFileWithKey key
   maybeNotFound "File" file
 
-createArticleHandler :: ActionM ()
+createArticleHandler :: HasMySQL u => ActionH u ()
 createArticleHandler = do
   title     <- param "title"
   summary   <- safeParam "summary" ""
@@ -77,7 +77,7 @@ createArticleHandler = do
 
   ok "article" result
 
-updateArticleHandler :: Article -> ActionM ()
+updateArticleHandler :: HasMySQL u => Article -> ActionH u ()
 updateArticleHandler art@Article{artID = aid} = do
   title   <- safeParam "title" ""
   summary <- safeParam "summary" ""
@@ -96,7 +96,7 @@ updateArticleHandler art@Article{artID = aid} = do
 
   ok "article" art2
 
-updateArticleCoverHandler :: Article -> ActionM ()
+updateArticleCoverHandler :: HasMySQL u => Article -> ActionH u ()
 updateArticleCoverHandler Article{artID = aid} = do
   fileId <- param "file_id"
   file <- lift $ getFileById fileId
@@ -107,12 +107,12 @@ updateArticleCoverHandler Article{artID = aid} = do
 
     Nothing -> errNotFound $ concat [ "File (", show fileId, ") not found." ]
 
-removeArticleCoverHandler :: Article -> ActionM ()
+removeArticleCoverHandler :: HasMySQL u => Article -> ActionH u ()
 removeArticleCoverHandler Article{artID = aid} = do
   void . lift $ updateArticleCover aid Nothing
   resultOK
 
-updateArticleExtraHandler :: Article -> ActionM ()
+updateArticleExtraHandler :: HasMySQL u => Article -> ActionH u ()
 updateArticleExtraHandler Article{artID = aid, artExtra = oev} = do
   extra <- param "extra"
   case decode extra :: Maybe Value of
@@ -122,7 +122,7 @@ updateArticleExtraHandler Article{artID = aid, artExtra = oev} = do
       resultOK
 
 
-removeArticleExtraHandler :: Article -> ActionM ()
+removeArticleExtraHandler :: HasMySQL u => Article -> ActionH u ()
 removeArticleExtraHandler Article{artID = aid, artExtra = oev} = do
   extra <- param "extra"
   case decode extra :: Maybe Value of
@@ -131,12 +131,12 @@ removeArticleExtraHandler Article{artID = aid, artExtra = oev} = do
       void . lift $ updateArticleExtra aid $ differenceValue oev ev
       resultOK
 
-clearArticleExtraHandler :: Article -> ActionM ()
+clearArticleExtraHandler :: HasMySQL u => Article -> ActionH u ()
 clearArticleExtraHandler Article{artID = aid} = do
   void . lift $ updateArticleExtra aid Null
   resultOK
 
-removeArticleHandler :: ActionM ()
+removeArticleHandler :: HasMySQL u => ActionH u ()
 removeArticleHandler = do
   artId   <- param "art_id"
 
@@ -147,10 +147,10 @@ removeArticleHandler = do
   resultOK
 
 
-getArticleHandler :: Article -> ActionM ()
+getArticleHandler :: Article -> ActionH u ()
 getArticleHandler = ok "article"
 
-existsArticleHandler :: ActionM ()
+existsArticleHandler :: HasMySQL u => ActionH u ()
 existsArticleHandler = do
   fromURL <- param "from_url"
 
@@ -159,12 +159,12 @@ existsArticleHandler = do
   ok "id" $ fromMaybe 0 art
 
 
-getAllArticleHandler :: ActionM ()
+getAllArticleHandler :: HasMySQL u => ActionH u ()
 getAllArticleHandler = do
   result <- articles
   resultArticle result
 
-createTagHandler :: ActionM ()
+createTagHandler :: HasMySQL u => ActionH u ()
 createTagHandler = do
   name <- param "tag"
   tag <- lift $ do
@@ -176,21 +176,21 @@ createTagHandler = do
 
   ok "tag" tag
 
-getTagHandler :: Tag -> ActionM ()
+getTagHandler :: HasMySQL u => Tag -> ActionH u ()
 getTagHandler = ok "tag"
 
-addArticleTagHandler :: Tag -> Article -> ActionM ()
+addArticleTagHandler :: HasMySQL u => Tag -> Article -> ActionH u ()
 addArticleTagHandler Tag{tagID = tid} Article{artID = aid} = do
   void . lift $ addArticleTag aid tid
 
   resultOK
 
-removeArticleTagHandler :: Tag -> Article -> ActionM ()
+removeArticleTagHandler :: HasMySQL u => Tag -> Article -> ActionH u ()
 removeArticleTagHandler Tag{tagID = tid} Article{artID = aid} = do
   void . lift $ removeArticleTag aid tid
   resultOK
 
-updateTagHandler :: ActionM ()
+updateTagHandler :: HasMySQL u => ActionH u ()
 updateTagHandler = do
   tid <- param "tag_id"
   name <- param "tag"
@@ -205,28 +205,28 @@ updateTagHandler = do
 
   else errNotFound "Not Found."
 
-createTimelineHandler :: Article -> ActionM ()
+createTimelineHandler :: HasMySQL u => Article -> ActionH u ()
 createTimelineHandler Article{artID = aid} = do
   name <- param "timeline"
   void . lift $ addTimeline name aid
 
   resultOK
 
-removeTimelineHandler :: Article -> ActionM ()
+removeTimelineHandler :: HasMySQL u => Article -> ActionH u ()
 removeTimelineHandler Article{artID = aid} = do
   name <- param "timeline"
   void . lift $ removeTimeline name aid
 
   resultOK
 
-getAllTimelineHandler :: ActionM ()
+getAllTimelineHandler :: HasMySQL u => ActionH u ()
 getAllTimelineHandler = do
   name <- param "timeline"
   result <- timeline name
 
   resultArticle result
 
-saveTimelineMetaHandler :: ActionM ()
+saveTimelineMetaHandler :: HasMySQL u => ActionH u ()
 saveTimelineMetaHandler = do
   name <- param "timeline"
   title <- safeParam "title" ""
@@ -235,14 +235,14 @@ saveTimelineMetaHandler = do
 
   resultOK
 
-removeTimelineMetaHandler :: ActionM ()
+removeTimelineMetaHandler :: HasMySQL u => ActionH u ()
 removeTimelineMetaHandler = do
   name <- param "timeline"
   void . lift $ removeTimelineMeta name
 
   resultOK
 
-getTimelineMetaHandler :: ActionM ()
+getTimelineMetaHandler :: HasMySQL u => ActionH u ()
 getTimelineMetaHandler = do
   name <- param "timeline"
   meta <- lift $ getTimelineMeta name
@@ -250,7 +250,7 @@ getTimelineMetaHandler = do
     Nothing     -> json $ object ["title" .= Null, "summary" .= Null]
     Just (t, s) -> json $ object ["title" .= t, "summary" .= s]
 
-resultArticle :: ListResult Article -> ActionM ()
+resultArticle :: HasMySQL u => ListResult Article -> ActionH u ()
 resultArticle result = do
   isCard <- safeParam "card" ("" :: String)
 

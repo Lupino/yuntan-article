@@ -4,14 +4,15 @@ module Article.Application
     application
   ) where
 
-import           Web.Scotty.Trans (delete, get, middleware, post)
+import           Web.Scotty.Trans      (delete, get, middleware, post)
 
-import           Network.Wai      (Middleware)
+import           Network.Wai           (Middleware)
+import           Yuntan.Types.HasMySQL (HasMySQL)
+import           Yuntan.Utils.Scotty   (ScottyH)
 
 import           Article.Router
-import           Article.UserEnv  (ScottyM)
 
-application :: [Middleware] -> ScottyM ()
+application :: HasMySQL u => [Middleware] -> ScottyH u ()
 application mids = do
   mapM_ middleware mids
 
