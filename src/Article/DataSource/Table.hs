@@ -32,7 +32,7 @@ createArticleTable prefix conn = execute_ conn sql
                                   , "  `content` longtext,"
                                   , "  `from_url` varchar(255) NOT NULL,"
                                   , "  `from_url_hash` varchar(128) NOT NULL,"
-                                  , "  `cover` varchar(255) DEFAULT NULL,"
+                                  , "  `cover` TEXT DEFAULT NULL,"
                                   , "  `extra` TEXT DEFAULT NULL,"
                                   , "  `created_at` int(10) unsigned NOT NULL,"
                                   , "  PRIMARY KEY (`id`),"
