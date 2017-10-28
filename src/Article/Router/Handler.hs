@@ -27,6 +27,8 @@ module Article.Router.Handler
   , saveTimelineMetaHandler
   , removeTimelineMetaHandler
   , getTimelineMetaHandler
+
+  , graphqlHandler
   ) where
 
 import           Control.Monad           (void)
@@ -40,7 +42,9 @@ import qualified Data.Text               as T (Text, length)
 
 
 import           Article
+import           Article.GraphQL         (schema)
 import           Article.Router.Helper
+import           Data.GraphQL            (graphql)
 import           Yuntan.Types.ListResult (ListResult (getResult), merge)
 import           Yuntan.Utils.JSON       (differenceValue, unionValue)
 import           Yuntan.Utils.Scotty     (ActionH, errBadRequest, errNotFound,
@@ -258,3 +262,9 @@ resultArticle result = do
                  else do
                       cards <- lift $ mapM toCardItem $ getResult result
                       okListResult "cards" $ merge cards result
+
+graphqlHandler :: HasMySQL u => ActionH u ()
+graphqlHandler = do
+  query <- param "query"
+  ret <- lift $ graphql schema query
+  json ret

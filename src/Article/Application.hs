@@ -46,3 +46,5 @@ application mids = do
 
   get    "/api/file/:key"                    getFileHandler
   post   "/api/file/:key"                    saveFileHandler
+
+  post "/api/graphql/"                       graphqlHandler
