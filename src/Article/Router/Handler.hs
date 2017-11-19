@@ -46,8 +46,9 @@ import           Article.GraphQL         (schema)
 import           Article.Router.Helper
 import           Data.GraphQL            (graphql)
 import           Yuntan.Types.ListResult (ListResult (getResult), merge)
+import           Yuntan.Types.Scotty     (ActionH)
 import           Yuntan.Utils.JSON       (differenceValue, unionValue)
-import           Yuntan.Utils.Scotty     (ActionH, errBadRequest, errNotFound,
+import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
                                           maybeNotFound, ok, okListResult,
                                           safeParam)
 

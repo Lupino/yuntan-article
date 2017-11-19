@@ -23,7 +23,8 @@ import           Yuntan.Types.HasMySQL   (HasMySQL)
 import           Yuntan.Types.ListResult (From, ListResult (..), Size,
                                           emptyListResult)
 import           Yuntan.Types.OrderBy    (desc)
-import           Yuntan.Utils.Scotty     (ActionH, errNotFound, ok, safeParam)
+import           Yuntan.Types.Scotty     (ActionH)
+import           Yuntan.Utils.Scotty     (errNotFound, ok, safeParam)
 
 pageParam :: ActionH u (Int64, Int64)
 pageParam = do
