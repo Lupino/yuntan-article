@@ -137,7 +137,7 @@ articleCount = scalarA "article_count" $ \ case
   _  -> empty
 
 timelineCount :: HasMySQL u => Resolver (GenHaxl u)
-timelineCount = scalarA "timeline_count" $ \ argv -> do
+timelineCount = scalarA "timeline_count" $ \ argv ->
   case getTextValue "name" argv of
     Nothing   -> empty
     Just name -> countTimeline (unpack name)
