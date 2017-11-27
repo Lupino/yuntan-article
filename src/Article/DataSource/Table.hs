@@ -2,19 +2,18 @@
 
 module Article.DataSource.Table
   (
-    createTable
+    mergeData
   ) where
 
-import           Database.MySQL.Simple (Connection, execute_)
+import           Database.MySQL.Simple (execute_)
+import           Yuntan.Types.HasMySQL (MySQL, VersionList, mergeDatabase)
 
-import           Data.Int              (Int64)
+import           Control.Monad         (void)
 import           Data.String           (fromString)
 
-import           Article.Types
 
-
-createArticleTagTable :: TablePrefix -> Connection -> IO Int64
-createArticleTagTable prefix conn = execute_ conn sql
+createArticleTagTable :: MySQL ()
+createArticleTagTable prefix conn = void $ execute_ conn sql
   where sql = fromString $ concat [ "CREATE TABLE IF NOT EXISTS `", prefix, "_article_tag` ("
                                   , "  `art_id` int(10) unsigned NOT NULL,"
                                   , "  `tag_id` int(10) unsigned NOT NULL,"
@@ -23,8 +22,8 @@ createArticleTagTable prefix conn = execute_ conn sql
                                   , ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
                                   ]
 
-createArticleTable :: TablePrefix -> Connection -> IO Int64
-createArticleTable prefix conn = execute_ conn sql
+createArticleTable :: MySQL ()
+createArticleTable prefix conn = void $ execute_ conn sql
   where sql = fromString $ concat [ "CREATE TABLE IF NOT EXISTS `", prefix, "_articles` ("
                                   , "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
                                   , "  `title` varchar(32) NOT NULL,"
@@ -40,8 +39,8 @@ createArticleTable prefix conn = execute_ conn sql
                                   , ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
                                   ]
 
-createFileTable :: TablePrefix -> Connection -> IO Int64
-createFileTable prefix conn = execute_ conn sql
+createFileTable :: MySQL ()
+createFileTable prefix conn = void $ execute_ conn sql
   where sql = fromString $ concat [ "CREATE TABLE IF NOT EXISTS `", prefix, "_files` ("
                                   , "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
                                   , "  `key` varchar(128) NOT NULL,"
@@ -53,8 +52,8 @@ createFileTable prefix conn = execute_ conn sql
                                   , ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
                                   ]
 
-createTagTable :: TablePrefix -> Connection -> IO Int64
-createTagTable prefix conn = execute_ conn sql
+createTagTable :: MySQL ()
+createTagTable prefix conn = void $ execute_ conn sql
   where sql = fromString $ concat [ "CREATE TABLE IF NOT EXISTS `", prefix, "_tags` ("
                                   , "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
                                   , "  `name` varchar(128) NOT NULL,"
@@ -64,8 +63,8 @@ createTagTable prefix conn = execute_ conn sql
                                   , ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
                                   ]
 
-createTimelineTable :: TablePrefix -> Connection -> IO Int64
-createTimelineTable prefix conn = execute_ conn sql
+createTimelineTable :: MySQL ()
+createTimelineTable prefix conn = void $ execute_ conn sql
   where sql = fromString $ concat [ "CREATE TABLE IF NOT EXISTS `", prefix, "_timeline` ("
                                   , "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
                                   , "  `name` varchar(128) NOT NULL,"
@@ -76,8 +75,8 @@ createTimelineTable prefix conn = execute_ conn sql
                                   , ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
                                   ]
 
-createTimelineMetaTable :: TablePrefix -> Connection -> IO Int64
-createTimelineMetaTable prefix conn = execute_ conn sql
+createTimelineMetaTable :: MySQL ()
+createTimelineMetaTable prefix conn = void $ execute_ conn sql
   where sql = fromString $ concat [ "CREATE TABLE IF NOT EXISTS `", prefix, "_timeline_meta` ("
                                   , "  `name` varchar(128) NOT NULL,"
                                   , "  `title` varchar(150) NOT NULL,"
@@ -86,11 +85,24 @@ createTimelineMetaTable prefix conn = execute_ conn sql
                                   , ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
                                   ]
 
-createTable :: TablePrefix -> Connection -> IO Int64
-createTable prefix conn = sum <$> mapM (\o -> o prefix conn) [ createArticleTagTable
-                                                             , createArticleTable
-                                                             , createTagTable
-                                                             , createFileTable
-                                                             , createTimelineTable
-                                                             , createTimelineMetaTable
-                                                             ]
+updateTable_1511777472 :: MySQL ()
+updateTable_1511777472 prefix conn =
+  void $ execute_ conn . fromString $ concat
+    [ "ALTER TABLE `", prefix, "_articles`"
+    , " MODIFY COLUMN `title` varchar(150) NOT NULL"
+    ]
+
+versionList :: VersionList
+versionList =
+  [ (1, [ createArticleTagTable
+        , createArticleTable
+        , createTagTable
+        , createFileTable
+        , createTimelineTable
+        , createTimelineMetaTable
+        ])
+  , (2, [updateTable_1511777472])
+  ]
+
+mergeData :: MySQL ()
+mergeData = mergeDatabase versionList

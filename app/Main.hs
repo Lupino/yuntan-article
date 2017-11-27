@@ -8,7 +8,7 @@ import           Data.Streaming.Network.Internal      (HostPreference (Host))
 import           Network.Wai.Handler.Warp             (setHost, setPort)
 import           Web.Scotty.Trans                     (scottyOptsT, settings)
 
-import           Article                              (createTable)
+import           Article                              (mergeData)
 import           Article.Application
 import           Article.DataSource                   (initArticleState)
 import           Haxl.Core                            (GenHaxl, StateStore,
@@ -80,7 +80,7 @@ program Options { getConfigFile  = confFile
   let opts = def { settings = setPort port
                             $ setHost (Host host) (settings def) }
 
-  _ <- runIO u state createTable
+  runIO u state mergeData
 
   scottyOptsT opts (runIO u state) $ application [logStdout]
   where

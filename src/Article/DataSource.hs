@@ -82,7 +82,7 @@ data ArticleReq a where
   RemoveTimelineMeta       :: String -> ArticleReq Int64
   GetTimelineMeta          :: String -> ArticleReq (Maybe (Title, Summary))
 
-  CreateTable              :: ArticleReq Int64
+  MergeData                :: ArticleReq ()
 
   deriving (Typeable)
 
@@ -128,7 +128,7 @@ instance Hashable (ArticleReq a) where
   hashWithSalt s (RemoveTimelineMeta a)       = hashWithSalt s (34::Int, a)
   hashWithSalt s (GetTimelineMeta a)          = hashWithSalt s (35::Int, a)
 
-  hashWithSalt s CreateTable                  = hashWithSalt s (36::Int)
+  hashWithSalt s MergeData                    = hashWithSalt s (36::Int)
 
 
 deriving instance Show (ArticleReq a)
@@ -216,7 +216,7 @@ fetchReq (SaveTimelineMeta name t s)       = saveTimelineMeta name t s
 fetchReq (RemoveTimelineMeta name)         = removeTimelineMeta name
 fetchReq (GetTimelineMeta name)            = getTimelineMeta name
 
-fetchReq CreateTable                       = createTable
+fetchReq MergeData                         = mergeData
 
 initArticleState :: Int -> State ArticleReq
 initArticleState = ArticleState

@@ -44,7 +44,7 @@ module Article.API
   , saveTimelineMeta
   , removeTimelineMeta
   , getTimelineMeta
-  , createTable
+  , mergeData
   ) where
 
 import           Article.Types
@@ -221,5 +221,5 @@ fillAllTimeline art = do
   timelines <- getAllArticleTimeline $ artID art
   return $ art { artTimelines = timelines }
 
-createTable :: HasMySQL u => GenHaxl u Int64
-createTable = uncachedRequest CreateTable
+mergeData :: HasMySQL u => GenHaxl u ()
+mergeData = uncachedRequest MergeData
