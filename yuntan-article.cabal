@@ -45,7 +45,14 @@ library
                      , text
                      , haxl
                      , scotty
-                     , yuntan-common
+                     , yuntan-common-config-mysql
+                     , yuntan-common-list-result
+                     , yuntan-common-order
+                     , yuntan-common-graphql
+                     , yuntan-common-scotty
+                     , yuntan-common-scotty-type
+                     , yuntan-common-json
+                     , yuntan-common-haxl
                      , aeson
                      , hashable
                      , unix-time
@@ -73,7 +80,7 @@ executable yuntan-article
                      , wai-extra
                      , yaml
                      , optparse-applicative
-                     , yuntan-common
+                     , yuntan-common-config-mysql
   default-language:    Haskell2010
 
 source-repository head
