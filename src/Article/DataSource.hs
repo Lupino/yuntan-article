@@ -148,12 +148,11 @@ doFetch
   => State ArticleReq
   -> Flags
   -> u
-  -> [BlockedFetch ArticleReq]
-  -> PerformFetch
+  -> PerformFetch ArticleReq
 
-doFetch _state _flags _user blockedFetches = AsyncFetch $ \inner -> do
+doFetch _state _flags _user = AsyncFetch $ \reqs inner -> do
     sem <- newQSem $ numThreads _state
-    asyncs <- mapM (fetchAsync sem _user) blockedFetches
+    asyncs <- mapM (fetchAsync sem _user) reqs
     inner
     mapM_ wait asyncs
 
