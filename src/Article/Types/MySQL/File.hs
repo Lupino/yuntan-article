@@ -38,7 +38,7 @@ instance Hashable File where
   hashWithSalt s f = hashWithSalt s $ fileID f
 
 instance QueryResults File where
-    convertResults [fa, fb, fc, fd, fe] [va, vb, vc, vd, ve] = File{..}
+    convertResults [fa, fb, fc, _, fe] [va, vb, vc, vd, ve] = File{..}
       where !fileID        = convert fa va
             !fileKey       = convert fb vb
             !fileBucket    = convert fc vc

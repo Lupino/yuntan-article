@@ -66,7 +66,7 @@ program Options { getConfigFile  = confFile
                 , getPort        = port
                 } = do
 
-  (Just conf) <- Y.decodeFile confFile :: IO (Maybe C.Config)
+  (Right conf) <- Y.decodeFileEither confFile
 
   let mysqlConfig  = C.mysqlConfig conf
       mysqlThreads = C.mysqlHaxlNumThreads mysqlConfig

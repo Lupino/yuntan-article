@@ -32,7 +32,7 @@ data Article = Article { artID          :: ID
   deriving (Show)
 
 instance QueryResults Article where
-    convertResults [fa, fb, fc, fd, fe, ff, fg, fh, fi]
+    convertResults [fa, fb, fc, fd, fe, ff, fg, _, fi]
                    [va, vb, vc, vd, ve, vf, vg, vh, vi] = Article{..}
       where !artID          = convert fa va
             !artTitle       = convert fb vb
