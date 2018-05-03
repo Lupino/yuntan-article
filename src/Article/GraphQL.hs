@@ -11,15 +11,13 @@ module Article.GraphQL
 import           Article.API
 import           Article.Types
 import           Control.Applicative   (Alternative (..))
-import qualified Data.Aeson            as A (Value)
 import           Data.GraphQL.Schema   (Resolver, Schema, arrayA', object,
                                         objectA', scalar, scalarA)
 import           Data.List.NonEmpty    (NonEmpty ((:|)))
 import           Data.Maybe            (fromMaybe)
 import           Data.Text             (unpack)
 import           Haxl.Core             (GenHaxl)
-import           Yuntan.Types.HasMySQL (ConfigLru, HasMySQL, HasOtherEnv,
-                                        fillValue, otherEnv)
+import           Yuntan.Types.HasMySQL (ConfigLru, HasMySQL, HasOtherEnv)
 import           Yuntan.Types.OrderBy  (desc)
 import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, value)
 
