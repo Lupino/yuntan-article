@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Article.Router.Helper
   (
@@ -19,7 +20,7 @@ import           Data.Int                (Int64)
 import           Data.Text.Lazy          (Text)
 import           Haxl.Core               (GenHaxl)
 import           Web.Scotty.Trans        (param)
-import           Yuntan.Types.HasMySQL   (HasMySQL)
+import           Yuntan.Types.HasMySQL   (ConfigLru, HasMySQL, HasOtherEnv)
 import           Yuntan.Types.ListResult (From, ListResult (..), Size,
                                           emptyListResult)
 import           Yuntan.Types.OrderBy    (desc)
@@ -39,12 +40,12 @@ timelineMeta = lift . getTimelineMeta
 timelineTitle :: HasMySQL u => String -> ActionH u Title
 timelineTitle name = maybe name fst <$> timelineMeta name
 
-timeline :: HasMySQL u => String -> ActionH u (ListResult Article)
+timeline :: (HasMySQL u, HasOtherEnv ConfigLru u) => String -> ActionH u (ListResult Article)
 timeline name = articles' s t
   where s = flip' (getAllTimeline name) $ desc "art_id"
         t = countTimeline name
 
-articles :: HasMySQL u => ActionH u (ListResult Article)
+articles :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u (ListResult Article)
 articles = articles' s t
   where s = flip' getAllArticle $ desc "id"
         t = countAllArticle
@@ -67,12 +68,12 @@ articles' s t = do
                            , getTotal  = total
                            }
 
-article :: HasMySQL u => ActionH u (Maybe Article)
+article :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u (Maybe Article)
 article = do
   aid <- param "art_id"
   lift $ getArticleById aid
 
-requireArticle :: HasMySQL u => (Article -> ActionH u ()) -> ActionH u ()
+requireArticle :: (HasMySQL u, HasOtherEnv ConfigLru u) => (Article -> ActionH u ()) -> ActionH u ()
 requireArticle action = do
   artId <- param "art_id"
 
@@ -96,7 +97,7 @@ requireTag action = do
 merge :: Monad m => ((a -> m ()) -> m ()) -> ((b -> m ()) -> m ()) -> (a -> b -> m ()) -> m ()
 merge f g t = f $ \a -> g $ \b -> t a b
 
-requireTagAndArticle :: HasMySQL u => (Tag -> Article -> ActionH u ()) -> ActionH u ()
+requireTagAndArticle :: (HasMySQL u, HasOtherEnv ConfigLru u) => (Tag -> Article -> ActionH u ()) -> ActionH u ()
 requireTagAndArticle = merge requireTag requireArticle
 
 resultOK :: ActionH u ()

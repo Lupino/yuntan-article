@@ -11,10 +11,14 @@ import           Web.Scotty.Trans                     (scottyOptsT, settings)
 import           Article                              (mergeData)
 import           Article.Application
 import           Article.DataSource                   (initArticleState)
+import           Data.LruCache.IO                     (newLruHandle)
 import           Haxl.Core                            (GenHaxl, StateStore,
                                                        initEnv, runHaxl,
                                                        stateEmpty, stateSet)
-import           Yuntan.Types.HasMySQL                (HasMySQL, simpleEnv)
+import           Yuntan.Types.HasMySQL                (ConfigLru, HasMySQL,
+                                                       SimpleEnv,
+                                                       initConfigState,
+                                                       simpleEnv)
 
 import           Network.Wai.Middleware.RequestLogger (logStdout)
 
@@ -70,12 +74,15 @@ program Options { getConfigFile  = confFile
 
   let mysqlConfig  = C.mysqlConfig conf
       mysqlThreads = C.mysqlHaxlNumThreads mysqlConfig
+      lruCacheSize = C.lruCacheSize conf
 
   pool <- C.genMySQLPool mysqlConfig
+  lru <- newLruHandle lruCacheSize
 
-  let state = stateSet (initArticleState mysqlThreads) stateEmpty
+  let state = stateSet (initConfigState mysqlThreads)
+            $ stateSet (initArticleState mysqlThreads) stateEmpty
 
-  let u = simpleEnv pool prefix
+  let u = simpleEnv pool prefix (Just lru) :: SimpleEnv ConfigLru
 
   let opts = def { settings = setPort port
                             $ setHost (Host host) (settings def) }

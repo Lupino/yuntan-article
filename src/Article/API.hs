@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Article.API
   (
@@ -52,7 +53,8 @@ import           Article.Types
 import           Article.DataSource      (ArticleReq (..))
 import           Data.Traversable        (for)
 import           Haxl.Core               (GenHaxl, dataFetch, uncachedRequest)
-import           Yuntan.Types.HasMySQL   (HasMySQL)
+import           Yuntan.Types.HasMySQL   (ConfigLru, HasMySQL, HasOtherEnv,
+                                          fillValue_, otherEnv)
 
 import           Data.Int                (Int64)
 import           Data.Maybe              (isJust)
@@ -66,11 +68,11 @@ import           Yuntan.Types.OrderBy    (OrderBy)
 
 import           System.FilePath         (takeFileName)
 
-getArticleById :: HasMySQL u => ID -> GenHaxl u (Maybe Article)
+getArticleById :: (HasMySQL u, HasOtherEnv ConfigLru u) => ID -> GenHaxl u (Maybe Article)
 getArticleById artId = do
   mart <- dataFetch (GetArticleById artId)
   case mart of
-    Just art -> fmap Just (fillAllTimeline =<< fillArticleCover =<< fillAllTagName art)
+    Just art -> fmap Just (fillArticleExtra =<< fillAllTimeline =<< fillArticleCover =<< fillAllTagName art)
     Nothing  -> return Nothing
 
 
@@ -103,10 +105,12 @@ fillArticleCover art = do
 updateArticleExtra :: HasMySQL u => ID -> Value -> GenHaxl u Int64
 updateArticleExtra artId extra = uncachedRequest (UpdateArticleExtra artId extra)
 
-getAllArticle :: HasMySQL u => From -> Size -> OrderBy -> GenHaxl u [Article]
+getAllArticle
+  :: (HasMySQL u, HasOtherEnv ConfigLru u)
+  => From -> Size -> OrderBy -> GenHaxl u [Article]
 getAllArticle f s o =do
   arts <- dataFetch (GetAllArticle f s o)
-  for arts $ \art -> fillAllTimeline =<< fillArticleCover =<< fillAllTagName art
+  for arts $ \art -> fillArticleExtra =<< fillAllTimeline =<< fillArticleCover =<< fillAllTagName art
 
 countAllArticle :: HasMySQL u => GenHaxl u Int64
 countAllArticle = dataFetch CountAllArticle
@@ -133,7 +137,9 @@ getFileById fileId = dataFetch (GetFileById fileId)
 getFiles :: HasMySQL u => [ID] -> GenHaxl u [File]
 getFiles ids = dataFetch (GetFiles ids)
 
-createArticleAndFetch :: HasMySQL u => Title -> Summary -> Content -> FromURL -> CreatedAt -> GenHaxl u (Maybe Article)
+createArticleAndFetch
+  :: (HasMySQL u, HasOtherEnv ConfigLru u)
+  => Title -> Summary -> Content -> FromURL -> CreatedAt -> GenHaxl u (Maybe Article)
 createArticleAndFetch t s co f c = getArticleById =<< createArticle t s co f c
 
 toCardItem :: HasMySQL u => Article -> GenHaxl u CardItem
@@ -195,7 +201,9 @@ addTimeline              :: HasMySQL u => String -> ID -> GenHaxl u ID
 removeTimeline           :: HasMySQL u => String -> ID -> GenHaxl u Int64
 removeAllTimeline        :: HasMySQL u => String -> GenHaxl u Int64
 removeAllTimelineByArtId :: HasMySQL u => ID -> GenHaxl u Int64
-getAllTimeline           :: HasMySQL u => String -> From -> Size -> OrderBy -> GenHaxl u [Article]
+getAllTimeline
+  :: (HasMySQL u, HasOtherEnv ConfigLru u)
+  => String -> From -> Size -> OrderBy -> GenHaxl u [Article]
 countTimeline            :: HasMySQL u => String -> GenHaxl u Int64
 getAllArticleTimeline    :: HasMySQL u => ID -> GenHaxl u [String]
 saveTimelineMeta         :: HasMySQL u => String -> Title -> Summary -> GenHaxl u Int64
@@ -208,7 +216,7 @@ removeAllTimeline name       = uncachedRequest (RemoveAllTimeline name)
 removeAllTimelineByArtId aid = uncachedRequest (RemoveAllTimelineByArtId aid)
 getAllTimeline name f s o    = do
   arts <- dataFetch (GetAllTimeline name f s o)
-  for arts $ \art -> fillAllTimeline =<< fillArticleCover =<< fillAllTagName art
+  for arts $ \art -> fillArticleExtra =<< fillAllTimeline =<< fillArticleCover =<< fillAllTagName art
 
 countTimeline name           = dataFetch (CountTimeline name)
 getAllArticleTimeline aid    = dataFetch (GetAllArticleTimeline aid)
@@ -223,3 +231,8 @@ fillAllTimeline art = do
 
 mergeData :: HasMySQL u => GenHaxl u ()
 mergeData = uncachedRequest MergeData
+
+fillArticleExtra :: (HasMySQL u, HasOtherEnv ConfigLru u) => Article -> GenHaxl u Article
+fillArticleExtra = fillValue_ otherEnv "article-extra" artExtra update
+  where update :: Value -> Article -> Article
+        update v u = u {artExtra = v}

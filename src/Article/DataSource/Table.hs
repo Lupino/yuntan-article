@@ -6,7 +6,8 @@ module Article.DataSource.Table
   ) where
 
 import           Database.MySQL.Simple (execute_)
-import           Yuntan.Types.HasMySQL (MySQL, VersionList, mergeDatabase)
+import           Yuntan.Types.HasMySQL (MySQL, VersionList, createConfigTable,
+                                        mergeDatabase)
 
 import           Control.Monad         (void)
 import           Data.String           (fromString)
@@ -102,6 +103,7 @@ versionList =
         , createTimelineMetaTable
         ])
   , (2, [updateTable_1511777472])
+  , (3, [createConfigTable])
   ]
 
 mergeData :: MySQL ()

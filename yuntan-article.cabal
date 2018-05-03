@@ -81,6 +81,7 @@ executable yuntan-article
                      , yaml
                      , optparse-applicative
                      , yuntan-common-config-mysql
+                     , lrucaching
   default-language:    Haskell2010
 
 source-repository head

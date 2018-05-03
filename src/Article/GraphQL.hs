@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -10,13 +11,15 @@ module Article.GraphQL
 import           Article.API
 import           Article.Types
 import           Control.Applicative   (Alternative (..))
+import qualified Data.Aeson            as A (Value)
 import           Data.GraphQL.Schema   (Resolver, Schema, arrayA', object,
                                         objectA', scalar, scalarA)
 import           Data.List.NonEmpty    (NonEmpty ((:|)))
 import           Data.Maybe            (fromMaybe)
 import           Data.Text             (unpack)
 import           Haxl.Core             (GenHaxl)
-import           Yuntan.Types.HasMySQL (HasMySQL)
+import           Yuntan.Types.HasMySQL (ConfigLru, HasMySQL, HasOtherEnv,
+                                        fillValue, otherEnv)
 import           Yuntan.Types.OrderBy  (desc)
 import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, value)
 
@@ -60,7 +63,7 @@ import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, value)
 --    summary: String
 --  }
 
-schema :: HasMySQL u => Schema (GenHaxl u)
+schema :: (HasMySQL u, HasOtherEnv ConfigLru u) => Schema (GenHaxl u)
 schema = file :| [article, articles, tag, timeline, articleCount, timelineCount, timelineMeta]
 
 file :: HasMySQL u => Resolver (GenHaxl u)
@@ -78,7 +81,7 @@ file_ File{..} =
   , scalar "created_at" fileCreatedAt
   ]
 
-article :: HasMySQL u => Resolver (GenHaxl u)
+article :: (HasMySQL u, HasOtherEnv ConfigLru u) => Resolver (GenHaxl u)
 article = objectA' "article" $ \argv ->
   case getIntValue "id" argv of
     Nothing    -> empty
@@ -98,7 +101,7 @@ article_ Article{..} =
   , scalar "created_at" artCreatedAt
   ]
 
-articles :: HasMySQL u => Resolver (GenHaxl u)
+articles :: (HasMySQL u, HasOtherEnv ConfigLru u) => Resolver (GenHaxl u)
 articles = arrayA' "articles" $ \ argv -> do
   let from = fromMaybe 0  $ getIntValue "from" argv
       size = fromMaybe 10 $ getIntValue "size" argv
@@ -121,7 +124,7 @@ tag_ Tag{..} =
   , scalar "created_at" tagCreatedAt
   ]
 
-timeline :: HasMySQL u => Resolver (GenHaxl u)
+timeline :: (HasMySQL u, HasOtherEnv ConfigLru u) => Resolver (GenHaxl u)
 timeline = arrayA' "timeline" $ \ argv -> do
   let from = fromMaybe 0  $ getIntValue "from" argv
       size = fromMaybe 10 $ getIntValue "size" argv

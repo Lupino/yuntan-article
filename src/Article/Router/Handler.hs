@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Article.Router.Handler
   (
@@ -29,14 +30,18 @@ module Article.Router.Handler
   , getTimelineMetaHandler
 
   , graphqlHandler
+
+  , setConfigHandler
+  , getConfigHandler
   ) where
 
 import           Control.Monad           (void)
 import           Control.Monad.Reader    (lift)
 
 import           Data.Aeson              (Value (..), decode, object, (.=))
+import           Data.ByteString.Lazy    (toStrict)
 import           Data.Maybe              (fromMaybe, isJust)
-import           Web.Scotty.Trans        (json, param, rescue)
+import           Web.Scotty.Trans        (body, json, param, rescue)
 
 import qualified Data.Text               as T (Text, length)
 
@@ -52,7 +57,8 @@ import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
                                           maybeNotFound, ok, okListResult,
                                           safeParam)
 
-import           Yuntan.Types.HasMySQL   (HasMySQL)
+import           Yuntan.Types.HasMySQL   (ConfigLru, HasMySQL, HasOtherEnv,
+                                          getConfigJSON', otherEnv, setConfig')
 import           Yuntan.Utils.Haxl       (runWithEnv)
 
 saveFileHandler :: HasMySQL u => ActionH u ()
@@ -70,7 +76,7 @@ getFileHandler = do
   file <- lift $ getFileWithKey key
   maybeNotFound "File" file
 
-createArticleHandler :: HasMySQL u => ActionH u ()
+createArticleHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
 createArticleHandler = do
   title     <- param "title"
   summary   <- safeParam "summary" ""
@@ -82,7 +88,7 @@ createArticleHandler = do
 
   ok "article" result
 
-updateArticleHandler :: HasMySQL u => Article -> ActionH u ()
+updateArticleHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => Article -> ActionH u ()
 updateArticleHandler art@Article{artID = aid} = do
   title   <- safeParam "title" ""
   summary <- safeParam "summary" ""
@@ -164,7 +170,7 @@ existsArticleHandler = do
   ok "id" $ fromMaybe 0 art
 
 
-getAllArticleHandler :: HasMySQL u => ActionH u ()
+getAllArticleHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
 getAllArticleHandler = do
   result <- articles
   resultArticle result
@@ -224,7 +230,7 @@ removeTimelineHandler Article{artID = aid} = do
 
   resultOK
 
-getAllTimelineHandler :: HasMySQL u => ActionH u ()
+getAllTimelineHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
 getAllTimelineHandler = do
   name <- param "timeline"
   result <- timeline name
@@ -264,8 +270,21 @@ resultArticle result = do
                       cards <- lift $ mapM toCardItem $ getResult result
                       okListResult "cards" $ merge cards result
 
-graphqlHandler :: HasMySQL u => ActionH u ()
+graphqlHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
 graphqlHandler = do
   query <- param "query"
   ret <- lift $ graphql schema query
   json ret
+
+setConfigHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
+setConfigHandler = do
+  k <- param "key"
+  v <- toStrict <$> body
+  lift $ setConfig' otherEnv k v
+  resultOK
+
+getConfigHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
+getConfigHandler = do
+  k <- param "key"
+  v <- lift (getConfigJSON' otherEnv k)
+  ok "result" (v :: Maybe Value)

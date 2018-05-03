@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Article.Application
   (
@@ -7,12 +8,12 @@ module Article.Application
 import           Web.Scotty.Trans      (delete, get, middleware, post)
 
 import           Network.Wai           (Middleware)
-import           Yuntan.Types.HasMySQL (HasMySQL)
+import           Yuntan.Types.HasMySQL (ConfigLru, HasMySQL, HasOtherEnv)
 import           Yuntan.Types.Scotty   (ScottyH)
 
 import           Article.Router
 
-application :: HasMySQL u => [Middleware] -> ScottyH u ()
+application :: (HasMySQL u, HasOtherEnv ConfigLru u) => [Middleware] -> ScottyH u ()
 application mids = do
   mapM_ middleware mids
 
@@ -48,3 +49,6 @@ application mids = do
   post   "/api/file/:key"                    saveFileHandler
 
   post "/api/graphql/"                       graphqlHandler
+
+  get "/api/config/:key/" getConfigHandler
+  post "/api/config/:key/" setConfigHandler
