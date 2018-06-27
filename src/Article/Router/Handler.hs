@@ -59,7 +59,6 @@ import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
 
 import           Yuntan.Types.HasMySQL   (ConfigLru, HasMySQL, HasOtherEnv,
                                           getConfigJSON', otherEnv, setConfig')
-import           Yuntan.Utils.Haxl       (runWithEnv)
 
 saveFileHandler :: HasMySQL u => ActionH u ()
 saveFileHandler = do
@@ -94,18 +93,16 @@ updateArticleHandler art@Article{artID = aid} = do
   summary <- safeParam "summary" ""
   content <- safeParam "content" (""::T.Text)
 
-  art2 <- lift $ do
-    changed <- if (not . null) title && (not . null) summary && T.length content > 0 then
+  void $ lift $ do
+    if (not . null) title && (not . null) summary && T.length content > 0 then
       updateArticle aid title summary content
     else do
       changed1 <- if (not . null) title then updateArticleTitle aid title else return 0
       changed2 <- if (not . null) summary then updateArticleSummary aid summary else return 0
       changed3 <- if T.length content > 0 then updateArticleContent aid content else return 0
       return (changed1 + changed2 + changed3)
-    if changed > 0 then runWithEnv $ getArticleById aid
-                   else return (Just art)
 
-  ok "article" art2
+  resultOK
 
 updateArticleCoverHandler :: HasMySQL u => Article -> ActionH u ()
 updateArticleCoverHandler Article{artID = aid} = do

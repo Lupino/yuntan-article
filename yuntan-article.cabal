@@ -52,7 +52,6 @@ library
                      , yuntan-common-scotty
                      , yuntan-common-scotty-type
                      , yuntan-common-json
-                     , yuntan-common-haxl
                      , aeson
                      , hashable
                      , unix-time
