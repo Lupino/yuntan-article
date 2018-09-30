@@ -35,6 +35,7 @@ application mids = do
 
   get    "/api/timeline/:timeline/"          getAllTimelineHandler
   post   "/api/timeline/:timeline/"          $ requireArticle createTimelineHandler
+  post   "/api/timeline/:timeline/:art_id/"  $ requireArticle createTimelineHandler
   get    "/api/timeline/:timeline/meta"      getTimelineMetaHandler
   post   "/api/timeline/:timeline/meta"      saveTimelineMetaHandler
   delete "/api/timeline/:timeline/meta"      removeTimelineMetaHandler
