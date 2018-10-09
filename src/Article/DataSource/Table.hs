@@ -6,8 +6,8 @@ module Article.DataSource.Table
   ) where
 
 import           Database.MySQL.Simple (execute_)
-import           Yuntan.Types.HasMySQL (MySQL, VersionList, createConfigTable,
-                                        mergeDatabase)
+import           Yuntan.Extra.Config   (createConfigTable)
+import           Yuntan.Types.HasMySQL (MySQL, VersionList, mergeDatabase)
 
 import           Control.Monad         (void)
 import           Data.String           (fromString)

@@ -53,8 +53,8 @@ import           Article.Types
 import           Article.DataSource      (ArticleReq (..))
 import           Data.Traversable        (for)
 import           Haxl.Core               (GenHaxl, dataFetch, uncachedRequest)
-import           Yuntan.Types.HasMySQL   (ConfigLru, HasMySQL, HasOtherEnv,
-                                          fillValue_, otherEnv)
+import           Yuntan.Extra.Config     (ConfigLru, fillValue_)
+import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv, otherEnv)
 
 import           Data.Int                (Int64)
 import           Data.Maybe              (isJust)

@@ -8,7 +8,8 @@ module Article.Application
 import           Web.Scotty.Trans      (delete, get, middleware, post)
 
 import           Network.Wai           (Middleware)
-import           Yuntan.Types.HasMySQL (ConfigLru, HasMySQL, HasOtherEnv)
+import           Yuntan.Extra.Config   (ConfigLru)
+import           Yuntan.Types.HasMySQL (HasMySQL, HasOtherEnv)
 import           Yuntan.Types.Scotty   (ScottyH)
 
 import           Article.Router

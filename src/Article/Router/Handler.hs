@@ -57,8 +57,8 @@ import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
                                           maybeNotFound, ok, okListResult,
                                           safeParam)
 
-import           Yuntan.Types.HasMySQL   (ConfigLru, HasMySQL, HasOtherEnv,
-                                          getConfigJSON', otherEnv, setConfig')
+import           Yuntan.Extra.Config     (ConfigLru, getConfigJSON', setConfig')
+import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv, otherEnv)
 
 saveFileHandler :: HasMySQL u => ActionH u ()
 saveFileHandler = do

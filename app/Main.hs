@@ -15,9 +15,9 @@ import           Data.LruCache.IO                     (newLruHandle)
 import           Haxl.Core                            (GenHaxl, StateStore,
                                                        initEnv, runHaxl,
                                                        stateEmpty, stateSet)
-import           Yuntan.Types.HasMySQL                (ConfigLru, HasMySQL,
-                                                       SimpleEnv,
-                                                       initConfigState,
+import           Yuntan.Extra.Config                  (ConfigLru,
+                                                       initConfigState)
+import           Yuntan.Types.HasMySQL                (HasMySQL, SimpleEnv,
                                                        simpleEnv)
 
 import           Network.Wai.Middleware.RequestLogger (logStdout)
