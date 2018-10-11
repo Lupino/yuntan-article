@@ -135,7 +135,7 @@ timeline = arrayA' "timeline" $ \ argv -> do
 
 articleCount :: HasMySQL u => Resolver (GenHaxl u)
 articleCount = scalarA "article_count" $ \ case
-  [] -> countAllArticle
+  [] -> countArticle
   _  -> empty
 
 timelineCount :: HasMySQL u => Resolver (GenHaxl u)

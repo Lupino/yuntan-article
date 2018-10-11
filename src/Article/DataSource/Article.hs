@@ -6,7 +6,7 @@ module Article.DataSource.Article
   , getArticle
   , removeArticle
   , getArticleIdList
-  , countAllArticle
+  , countArticle
   , updateArticle
   , updateArticleCover
   , updateArticleExtra
@@ -106,6 +106,6 @@ getArticleIdList :: From -> Size -> OrderBy -> MySQL [ID]
 getArticleIdList from size o prefix conn = map fromOnly <$> query conn sql (from, size)
   where sql = fromString $ concat [ "SELECT `id` FROM `", prefix, "_articles` ", show o, " LIMIT ?,?" ]
 
-countAllArticle :: MySQL Int64
-countAllArticle prefix conn = maybe 0 fromOnly . listToMaybe <$> query_ conn sql
+countArticle :: MySQL Int64
+countArticle prefix conn = maybe 0 fromOnly . listToMaybe <$> query_ conn sql
   where sql = fromString $ concat [ "SELECT count(*) FROM `", prefix, "_articles`" ]

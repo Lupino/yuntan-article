@@ -49,7 +49,7 @@ timeline name = articles' s t
 articles :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u (ListResult Article)
 articles = articles' s t
   where s = flip' getArticleList $ desc "id"
-        t = countAllArticle
+        t = countArticle
 
 flip' :: (a -> b -> c -> d) -> c -> a -> b -> d
 flip' f = g

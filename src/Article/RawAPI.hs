@@ -10,7 +10,7 @@ module Article.RawAPI
   , updateArticleCover
   , updateArticleExtra
   , getArticleIdList
-  , countAllArticle
+  , countArticle
   , removeArticle
   , existsArticle
 
@@ -81,8 +81,8 @@ updateArticleExtra artId extra = uncachedRequest (UpdateArticleExtra artId extra
 getArticleIdList :: (HasMySQL u) => From -> Size -> OrderBy -> GenHaxl u [ID]
 getArticleIdList f s o = dataFetch (GetArticleIdList f s o)
 
-countAllArticle :: HasMySQL u => GenHaxl u Int64
-countAllArticle = dataFetch CountAllArticle
+countArticle :: HasMySQL u => GenHaxl u Int64
+countArticle = dataFetch CountArticle
 
 removeArticle :: HasMySQL u => ID -> GenHaxl u Int64
 removeArticle artId = uncachedRequest (RemoveArticle artId)

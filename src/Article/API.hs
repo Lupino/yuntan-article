@@ -28,7 +28,7 @@ module Article.API
   ) where
 
 import           Article.Config          (Cache, lruEnv, redisEnv)
-import           Article.RawAPI          as X (addTag, countAllArticle,
+import           Article.RawAPI          as X (addTag, countArticle,
                                                countTimeline, createArticle,
                                                existsArticle,
                                                getAllArticleTagName,

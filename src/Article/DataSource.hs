@@ -50,7 +50,7 @@ data ArticleReq a where
   UpdateArticleCover   :: ID -> Maybe File -> ArticleReq Int64
   UpdateArticleExtra   :: ID -> Value -> ArticleReq Int64
   GetArticleIdList     :: From -> Size -> OrderBy -> ArticleReq [ID]
-  CountAllArticle      :: ArticleReq Int64
+  CountArticle         :: ArticleReq Int64
   RemoveArticle        :: ID -> ArticleReq Int64
 
   SaveFile             :: FileBucket -> FileKey -> ArticleReq (Maybe File)
@@ -96,7 +96,7 @@ instance Hashable (ArticleReq a) where
   hashWithSalt s (UpdateArticleCover a b)     = hashWithSalt s (6::Int, a, b)
   hashWithSalt s (UpdateArticleExtra a b)     = hashWithSalt s (7::Int, a, b)
   hashWithSalt s (GetArticleIdList a b c)     = hashWithSalt s (8::Int, a, b, c)
-  hashWithSalt s CountAllArticle              = hashWithSalt s (9::Int)
+  hashWithSalt s CountArticle                 = hashWithSalt s (9::Int)
   hashWithSalt s (RemoveArticle a)            = hashWithSalt s (10::Int, a)
 
   hashWithSalt s (SaveFile a b)               = hashWithSalt s (11::Int, a, b)
@@ -182,7 +182,7 @@ fetchReq (UpdateArticleExtra artId e)      = updateArticleExtra artId e
 
 fetchReq (RemoveArticle artId)             = removeArticle artId
 fetchReq (GetArticleIdList f s o)          = getArticleIdList f s o
-fetchReq CountAllArticle                   = countAllArticle
+fetchReq CountArticle                      = countArticle
 
 fetchReq (SaveFile path fc)                = saveFile path fc
 fetchReq (SaveFileWithExtra path fc extra) = saveFileWithExtra path fc extra
