@@ -45,8 +45,8 @@ import           Web.Scotty.Trans        (body, json, param, rescue)
 
 import qualified Data.Text               as T (Text, length)
 
-
 import           Article
+import           Article.Config          (Cache, lruEnv)
 import           Article.GraphQL         (schema)
 import           Article.Router.Helper
 import           Data.GraphQL            (graphql)
@@ -57,8 +57,8 @@ import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
                                           maybeNotFound, ok, okListResult,
                                           safeParam)
 
-import           Yuntan.Extra.Config     (ConfigLru, getConfigJSON', setConfig')
-import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv, otherEnv)
+import           Yuntan.Extra.Config     (getConfigJSON', setConfig')
+import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
 
 saveFileHandler :: HasMySQL u => ActionH u ()
 saveFileHandler = do
@@ -75,7 +75,7 @@ getFileHandler = do
   file <- lift $ getFileWithKey key
   maybeNotFound "File" file
 
-createArticleHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
+createArticleHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 createArticleHandler = do
   title     <- param "title"
   summary   <- safeParam "summary" ""
@@ -87,8 +87,8 @@ createArticleHandler = do
 
   ok "article" result
 
-updateArticleHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => Article -> ActionH u ()
-updateArticleHandler art@Article{artID = aid} = do
+updateArticleHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
+updateArticleHandler Article{artID = aid} = do
   title   <- safeParam "title" ""
   summary <- safeParam "summary" ""
   content <- safeParam "content" (""::T.Text)
@@ -104,7 +104,7 @@ updateArticleHandler art@Article{artID = aid} = do
 
   resultOK
 
-updateArticleCoverHandler :: HasMySQL u => Article -> ActionH u ()
+updateArticleCoverHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
 updateArticleCoverHandler Article{artID = aid} = do
   fileId <- param "file_id"
   file <- lift $ getFileById fileId
@@ -115,12 +115,12 @@ updateArticleCoverHandler Article{artID = aid} = do
 
     Nothing -> errNotFound $ concat [ "File (", show fileId, ") not found." ]
 
-removeArticleCoverHandler :: HasMySQL u => Article -> ActionH u ()
+removeArticleCoverHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
 removeArticleCoverHandler Article{artID = aid} = do
   void . lift $ updateArticleCover aid Nothing
   resultOK
 
-updateArticleExtraHandler :: HasMySQL u => Article -> ActionH u ()
+updateArticleExtraHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
 updateArticleExtraHandler Article{artID = aid, artExtra = oev} = do
   extra <- param "extra"
   case decode extra :: Maybe Value of
@@ -130,7 +130,7 @@ updateArticleExtraHandler Article{artID = aid, artExtra = oev} = do
       resultOK
 
 
-removeArticleExtraHandler :: HasMySQL u => Article -> ActionH u ()
+removeArticleExtraHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
 removeArticleExtraHandler Article{artID = aid, artExtra = oev} = do
   extra <- param "extra"
   case decode extra :: Maybe Value of
@@ -139,18 +139,18 @@ removeArticleExtraHandler Article{artID = aid, artExtra = oev} = do
       void . lift $ updateArticleExtra aid $ differenceValue oev ev
       resultOK
 
-clearArticleExtraHandler :: HasMySQL u => Article -> ActionH u ()
+clearArticleExtraHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
 clearArticleExtraHandler Article{artID = aid} = do
   void . lift $ updateArticleExtra aid Null
   resultOK
 
-removeArticleHandler :: HasMySQL u => ActionH u ()
+removeArticleHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 removeArticleHandler = do
   artId   <- param "art_id"
 
   lift . void $ removeArticle artId
   lift . void $ removeAllArticleTag artId
-  lift . void $ removeAllTimelineByArtId artId
+  lift . void $ removeTimelineListById artId
 
   resultOK
 
@@ -167,7 +167,7 @@ existsArticleHandler = do
   ok "id" $ fromMaybe 0 art
 
 
-getAllArticleHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
+getAllArticleHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 getAllArticleHandler = do
   result <- articles
   resultArticle result
@@ -187,18 +187,18 @@ createTagHandler = do
 getTagHandler :: HasMySQL u => Tag -> ActionH u ()
 getTagHandler = ok "tag"
 
-addArticleTagHandler :: HasMySQL u => Tag -> Article -> ActionH u ()
+addArticleTagHandler :: (HasMySQL u, HasOtherEnv Cache u) => Tag -> Article -> ActionH u ()
 addArticleTagHandler Tag{tagID = tid} Article{artID = aid} = do
   void . lift $ addArticleTag aid tid
 
   resultOK
 
-removeArticleTagHandler :: HasMySQL u => Tag -> Article -> ActionH u ()
+removeArticleTagHandler :: (HasMySQL u, HasOtherEnv Cache u) => Tag -> Article -> ActionH u ()
 removeArticleTagHandler Tag{tagID = tid} Article{artID = aid} = do
   void . lift $ removeArticleTag aid tid
   resultOK
 
-updateTagHandler :: HasMySQL u => ActionH u ()
+updateTagHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 updateTagHandler = do
   tid <- param "tag_id"
   name <- param "tag"
@@ -213,21 +213,21 @@ updateTagHandler = do
 
   else errNotFound "Not Found."
 
-createTimelineHandler :: HasMySQL u => Article -> ActionH u ()
+createTimelineHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
 createTimelineHandler Article{artID = aid} = do
   name <- param "timeline"
   void . lift $ addTimeline name aid
 
   resultOK
 
-removeTimelineHandler :: HasMySQL u => Article -> ActionH u ()
+removeTimelineHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
 removeTimelineHandler Article{artID = aid} = do
   name <- param "timeline"
   void . lift $ removeTimeline name aid
 
   resultOK
 
-getAllTimelineHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
+getAllTimelineHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 getAllTimelineHandler = do
   name <- param "timeline"
   result <- timeline name
@@ -267,21 +267,21 @@ resultArticle result = do
                       cards <- lift $ mapM toCardItem $ getResult result
                       okListResult "cards" $ merge cards result
 
-graphqlHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
+graphqlHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 graphqlHandler = do
   query <- param "query"
   ret <- lift $ graphql schema query
   json ret
 
-setConfigHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
+setConfigHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 setConfigHandler = do
   k <- param "key"
   v <- toStrict <$> body
-  lift $ setConfig' otherEnv k v
+  lift $ setConfig' lruEnv k v
   resultOK
 
-getConfigHandler :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u ()
+getConfigHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 getConfigHandler = do
   k <- param "key"
-  v <- lift (getConfigJSON' otherEnv k)
+  v <- lift (getConfigJSON' lruEnv k)
   ok "result" (v :: Maybe Value)

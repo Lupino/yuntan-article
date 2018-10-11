@@ -9,6 +9,7 @@ module Article.GraphQL
   ) where
 
 import           Article.API
+import           Article.Config        (Cache)
 import           Article.Types
 import           Control.Applicative   (Alternative (..))
 import           Data.GraphQL.Schema   (Resolver, Schema, arrayA', object,
@@ -17,7 +18,6 @@ import           Data.List.NonEmpty    (NonEmpty ((:|)))
 import           Data.Maybe            (fromMaybe)
 import           Data.Text             (unpack)
 import           Haxl.Core             (GenHaxl)
-import           Yuntan.Extra.Config   (ConfigLru)
 import           Yuntan.Types.HasMySQL (HasMySQL, HasOtherEnv)
 import           Yuntan.Types.OrderBy  (desc)
 import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, value)
@@ -62,7 +62,7 @@ import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, value)
 --    summary: String
 --  }
 
-schema :: (HasMySQL u, HasOtherEnv ConfigLru u) => Schema (GenHaxl u)
+schema :: (HasMySQL u, HasOtherEnv Cache u) => Schema (GenHaxl u)
 schema = file :| [article, articles, tag, timeline, articleCount, timelineCount, timelineMeta]
 
 file :: HasMySQL u => Resolver (GenHaxl u)
@@ -80,7 +80,7 @@ file_ File{..} =
   , scalar "created_at" fileCreatedAt
   ]
 
-article :: (HasMySQL u, HasOtherEnv ConfigLru u) => Resolver (GenHaxl u)
+article :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
 article = objectA' "article" $ \argv ->
   case getIntValue "id" argv of
     Nothing    -> empty
@@ -100,12 +100,12 @@ article_ Article{..} =
   , scalar "created_at" artCreatedAt
   ]
 
-articles :: (HasMySQL u, HasOtherEnv ConfigLru u) => Resolver (GenHaxl u)
+articles :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
 articles = arrayA' "articles" $ \ argv -> do
   let from = fromMaybe 0  $ getIntValue "from" argv
       size = fromMaybe 10 $ getIntValue "size" argv
 
-  map article_ <$> getAllArticle from size (desc "id")
+  map article_ <$> getArticleList from size (desc "id")
 
 tag :: HasMySQL u => Resolver (GenHaxl u)
 tag = objectA' "tag" $ \argv -> do
@@ -123,7 +123,7 @@ tag_ Tag{..} =
   , scalar "created_at" tagCreatedAt
   ]
 
-timeline :: (HasMySQL u, HasOtherEnv ConfigLru u) => Resolver (GenHaxl u)
+timeline :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
 timeline = arrayA' "timeline" $ \ argv -> do
   let from = fromMaybe 0  $ getIntValue "from" argv
       size = fromMaybe 10 $ getIntValue "size" argv
@@ -131,7 +131,7 @@ timeline = arrayA' "timeline" $ \ argv -> do
   case getTextValue "name" argv of
     Nothing   -> empty
     Just name ->
-      map article_ <$> getAllTimeline (unpack name) from size (desc "art_id")
+      map article_ <$> getArticleListByTimeline (unpack name) from size (desc "art_id")
 
 articleCount :: HasMySQL u => Resolver (GenHaxl u)
 articleCount = scalarA "article_count" $ \ case

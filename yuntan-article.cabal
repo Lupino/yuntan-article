@@ -18,6 +18,7 @@ library
   exposed-modules:     Article
                      , Article.Application
                      , Article.API
+                     , Article.RawAPI
                      , Article.DataSource
                      , Article.DataSource.Article
                      , Article.DataSource.File
@@ -53,6 +54,9 @@ library
                      , yuntan-common-scotty
                      , yuntan-common-scotty-type
                      , yuntan-common-json
+                     , yuntan-common-config-redis
+                     , yuntan-common-redis-caching
+                     , hedis
                      , aeson
                      , hashable
                      , unix-time
@@ -82,6 +86,8 @@ executable yuntan-article
                      , optparse-applicative
                      , yuntan-common-config-mysql
                      , yuntan-common-extra-config
+                     , yuntan-common-config-redis
+                     , yuntan-common-redis-caching
                      , lrucaching
   default-language:    Haskell2010
 

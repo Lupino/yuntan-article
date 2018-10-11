@@ -4,11 +4,11 @@ module Article.DataSource.Timeline
   (
     addTimeline
   , removeTimeline
-  , removeAllTimeline
-  , removeAllTimelineByArtId
-  , getAllTimeline
+  , removeTimelineList
+  , removeTimelineListById
+  , getIdListByTimeline
   , countTimeline
-  , getAllArticleTimeline
+  , getTimelineListById
   , saveTimelineMeta
   , removeTimelineMeta
   , getTimelineMeta
@@ -36,19 +36,18 @@ removeTimeline :: String -> ID -> MySQL Int64
 removeTimeline name aid prefix conn = execute conn sql (name, aid)
   where sql = fromString $ concat [ "DELETE FROM `", prefix, "_timeline` WHERE `name` = ? AND `art_id` = ?" ]
 
-removeAllTimeline :: String -> MySQL Int64
-removeAllTimeline name prefix conn = execute conn sql (Only name)
+removeTimelineList :: String -> MySQL Int64
+removeTimelineList name prefix conn = execute conn sql (Only name)
   where sql = fromString $ concat [ "DELETE FROM `", prefix, "_timeline` WHERE `name` = ?" ]
 
-removeAllTimelineByArtId :: ID -> MySQL Int64
-removeAllTimelineByArtId aid prefix conn = execute conn sql (Only aid)
+removeTimelineListById :: ID -> MySQL Int64
+removeTimelineListById aid prefix conn = execute conn sql (Only aid)
   where sql = fromString $ concat [ "DELETE FROM `", prefix, "_timeline` WHERE `art_id` = ?" ]
 
-getAllTimeline :: String -> From -> Size -> OrderBy -> MySQL [Article]
-getAllTimeline name f s o prefix conn = query conn sql (name, f, s)
-  where sql = fromString $ concat [ "SELECT a.* FROM `", prefix, "_articles` AS a"
-                                  , " LEFT JOIN `", prefix, "_timeline` AS t ON t.`art_id` = a.`id` "
-                                  , " WHERE t.`name`=? "
+getIdListByTimeline :: String -> From -> Size -> OrderBy -> MySQL [ID]
+getIdListByTimeline name f s o prefix conn = map fromOnly <$> query conn sql (name, f, s)
+  where sql = fromString $ concat [ "SELECT `art_id` FROM `", prefix, "_timeline`"
+                                  , " WHERE `name`=? "
                                   , show o
                                   , " LIMIT ?,?"
                                   ]
@@ -57,8 +56,8 @@ countTimeline :: String -> MySQL Int64
 countTimeline name prefix conn = maybe 0 fromOnly . listToMaybe <$> query conn sql (Only name)
   where sql = fromString $ concat [ "SELECT count(*) FROM `", prefix, "_timeline` WHERE `name`=?" ]
 
-getAllArticleTimeline :: ID -> MySQL [String]
-getAllArticleTimeline aid prefix conn = map fromOnly <$> query conn sql (Only aid)
+getTimelineListById :: ID -> MySQL [String]
+getTimelineListById aid prefix conn = map fromOnly <$> query conn sql (Only aid)
   where sql = fromString $ concat [ "SELECT `name` FROM `", prefix, "_timeline` WHERE `art_id` = ?" ]
 
 saveTimelineMeta :: String -> Title -> Summary -> MySQL Int64

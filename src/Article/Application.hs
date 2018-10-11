@@ -7,14 +7,14 @@ module Article.Application
 
 import           Web.Scotty.Trans      (delete, get, middleware, post)
 
+import           Article.Config        (Cache)
 import           Network.Wai           (Middleware)
-import           Yuntan.Extra.Config   (ConfigLru)
 import           Yuntan.Types.HasMySQL (HasMySQL, HasOtherEnv)
 import           Yuntan.Types.Scotty   (ScottyH)
 
 import           Article.Router
 
-application :: (HasMySQL u, HasOtherEnv ConfigLru u) => [Middleware] -> ScottyH u ()
+application :: (HasMySQL u, HasOtherEnv Cache u) => [Middleware] -> ScottyH u ()
 application mids = do
   mapM_ middleware mids
 

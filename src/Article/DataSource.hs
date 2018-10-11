@@ -49,7 +49,7 @@ data ArticleReq a where
   UpdateArticleContent :: ID -> Content -> ArticleReq Int64
   UpdateArticleCover   :: ID -> Maybe File -> ArticleReq Int64
   UpdateArticleExtra   :: ID -> Value -> ArticleReq Int64
-  GetAllArticle        :: From -> Size -> OrderBy -> ArticleReq [Article]
+  GetArticleIdList     :: From -> Size -> OrderBy -> ArticleReq [ID]
   CountAllArticle      :: ArticleReq Int64
   RemoveArticle        :: ID -> ArticleReq Int64
 
@@ -57,7 +57,6 @@ data ArticleReq a where
   SaveFileWithExtra    :: FileBucket -> FileKey -> FileExtra -> ArticleReq (Maybe File)
   GetFileWithKey       :: FileKey -> ArticleReq (Maybe File)
   GetFileById          :: ID -> ArticleReq (Maybe File)
-  GetFiles             :: [ID] -> ArticleReq [File]
 
   ExistsArticle        :: FromURL -> ArticleReq (Maybe Int64)
 
@@ -73,11 +72,11 @@ data ArticleReq a where
 
   AddTimeline              :: String -> ID -> ArticleReq ID
   RemoveTimeline           :: String -> ID -> ArticleReq Int64
-  RemoveAllTimeline        :: String -> ArticleReq Int64
-  RemoveAllTimelineByArtId :: ID -> ArticleReq Int64
-  GetAllTimeline           :: String -> From -> Size -> OrderBy -> ArticleReq [Article]
+  RemoveTimelineList        :: String -> ArticleReq Int64
+  RemoveTimelineListById :: ID -> ArticleReq Int64
+  GetIdListByTimeline           :: String -> From -> Size -> OrderBy -> ArticleReq [ID]
   CountTimeline            :: String -> ArticleReq Int64
-  GetAllArticleTimeline    :: ID -> ArticleReq [String]
+  GetTimelineListById      :: ID -> ArticleReq [String]
   SaveTimelineMeta         :: String -> Title -> Summary -> ArticleReq Int64
   RemoveTimelineMeta       :: String -> ArticleReq Int64
   GetTimelineMeta          :: String -> ArticleReq (Maybe (Title, Summary))
@@ -96,7 +95,7 @@ instance Hashable (ArticleReq a) where
   hashWithSalt s (UpdateArticleContent a b)   = hashWithSalt s (5::Int, a, b)
   hashWithSalt s (UpdateArticleCover a b)     = hashWithSalt s (6::Int, a, b)
   hashWithSalt s (UpdateArticleExtra a b)     = hashWithSalt s (7::Int, a, b)
-  hashWithSalt s (GetAllArticle a b c)        = hashWithSalt s (8::Int, a, b, c)
+  hashWithSalt s (GetArticleIdList a b c)     = hashWithSalt s (8::Int, a, b, c)
   hashWithSalt s CountAllArticle              = hashWithSalt s (9::Int)
   hashWithSalt s (RemoveArticle a)            = hashWithSalt s (10::Int, a)
 
@@ -104,7 +103,6 @@ instance Hashable (ArticleReq a) where
   hashWithSalt s (SaveFileWithExtra a b c)    = hashWithSalt s (12::Int, a, b, c)
   hashWithSalt s (GetFileWithKey a)           = hashWithSalt s (13::Int, a)
   hashWithSalt s (GetFileById a)              = hashWithSalt s (14::Int, a)
-  hashWithSalt s (GetFiles a)                 = hashWithSalt s (15::Int, a)
   hashWithSalt s (ExistsArticle a)            = hashWithSalt s (16::Int, a)
 
   hashWithSalt s (AddTag a)                   = hashWithSalt s (17::Int, a)
@@ -119,10 +117,10 @@ instance Hashable (ArticleReq a) where
 
   hashWithSalt s (AddTimeline a b)            = hashWithSalt s (26::Int, a, b)
   hashWithSalt s (RemoveTimeline a b)         = hashWithSalt s (27::Int, a, b)
-  hashWithSalt s (RemoveAllTimeline a)        = hashWithSalt s (28::Int, a)
-  hashWithSalt s (RemoveAllTimelineByArtId a) = hashWithSalt s (29::Int, a)
-  hashWithSalt s (GetAllTimeline a b c d)     = hashWithSalt s (30::Int, a, b, c, d)
-  hashWithSalt s (GetAllArticleTimeline a)    = hashWithSalt s (31::Int, a)
+  hashWithSalt s (RemoveTimelineList a)        = hashWithSalt s (28::Int, a)
+  hashWithSalt s (RemoveTimelineListById a) = hashWithSalt s (29::Int, a)
+  hashWithSalt s (GetIdListByTimeline a b c d)     = hashWithSalt s (30::Int, a, b, c, d)
+  hashWithSalt s (GetTimelineListById a)    = hashWithSalt s (31::Int, a)
   hashWithSalt s (CountTimeline a)            = hashWithSalt s (32::Int, a)
   hashWithSalt s (SaveTimelineMeta a b c)     = hashWithSalt s (33::Int, a, b, c)
   hashWithSalt s (RemoveTimelineMeta a)       = hashWithSalt s (34::Int, a)
@@ -183,14 +181,13 @@ fetchReq (UpdateArticleCover artId c)      = updateArticleCover artId c
 fetchReq (UpdateArticleExtra artId e)      = updateArticleExtra artId e
 
 fetchReq (RemoveArticle artId)             = removeArticle artId
-fetchReq (GetAllArticle f s o)             = getAllArticle f s o
+fetchReq (GetArticleIdList f s o)          = getArticleIdList f s o
 fetchReq CountAllArticle                   = countAllArticle
 
 fetchReq (SaveFile path fc)                = saveFile path fc
 fetchReq (SaveFileWithExtra path fc extra) = saveFileWithExtra path fc extra
 fetchReq (GetFileWithKey key)              = getFileWithKey key
 fetchReq (GetFileById fileId)              = getFile fileId
-fetchReq (GetFiles fileIds)                = getFiles fileIds
 
 fetchReq (ExistsArticle u)                 = existsArticle u
 
@@ -206,11 +203,11 @@ fetchReq (GetAllArticleTagName aid)        = getAllArticleTagName aid
 
 fetchReq (AddTimeline name aid)            = addTimeline name aid
 fetchReq (RemoveTimeline name aid)         = removeTimeline name aid
-fetchReq (RemoveAllTimeline name)          = removeAllTimeline name
-fetchReq (RemoveAllTimelineByArtId aid)    = removeAllTimelineByArtId aid
-fetchReq (GetAllTimeline name f s o)       = getAllTimeline name f s o
+fetchReq (RemoveTimelineList name)         = removeTimelineList name
+fetchReq (RemoveTimelineListById aid)      = removeTimelineListById aid
+fetchReq (GetIdListByTimeline name f s o)  = getIdListByTimeline name f s o
 fetchReq (CountTimeline name)              = countTimeline name
-fetchReq (GetAllArticleTimeline aid)       = getAllArticleTimeline aid
+fetchReq (GetTimelineListById aid)         = getTimelineListById aid
 fetchReq (SaveTimelineMeta name t s)       = saveTimelineMeta name t s
 fetchReq (RemoveTimelineMeta name)         = removeTimelineMeta name
 fetchReq (GetTimelineMeta name)            = getTimelineMeta name

@@ -1,24 +1,25 @@
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
-import           Data.Default.Class                   (def)
-import           Data.Streaming.Network.Internal      (HostPreference (Host))
-import           Network.Wai.Handler.Warp             (setHost, setPort)
-import           Web.Scotty.Trans                     (scottyOptsT, settings)
-
 import           Article                              (mergeData)
 import           Article.Application
 import           Article.DataSource                   (initArticleState)
+import           Data.Default.Class                   (def)
 import           Data.LruCache.IO                     (newLruHandle)
+import           Data.Streaming.Network.Internal      (HostPreference (Host))
+import           Data.String                          (fromString)
 import           Haxl.Core                            (GenHaxl, StateStore,
                                                        initEnv, runHaxl,
                                                        stateEmpty, stateSet)
-import           Yuntan.Extra.Config                  (ConfigLru,
-                                                       initConfigState)
-import           Yuntan.Types.HasMySQL                (HasMySQL, SimpleEnv,
+import           Network.Wai.Handler.Warp             (setHost, setPort)
+import           Web.Scotty.Trans                     (scottyOptsT, settings)
+import           Yuntan.Extra.Config                  (initConfigState)
+import           Yuntan.Types.HasMySQL                (HasMySQL, HasOtherEnv,
                                                        simpleEnv)
+import           Yuntan.Utils.RedisCache              (initRedisState)
 
 import           Network.Wai.Middleware.RequestLogger (logStdout)
 
@@ -75,14 +76,18 @@ program Options { getConfigFile  = confFile
   let mysqlConfig  = C.mysqlConfig conf
       mysqlThreads = C.mysqlHaxlNumThreads mysqlConfig
       lruCacheSize = C.lruCacheSize conf
+      redisConfig  = C.redisConfig conf
+      redisThreads = C.redisHaxlNumThreads redisConfig
 
   pool <- C.genMySQLPool mysqlConfig
-  lru <- newLruHandle lruCacheSize
+  lruHandle <- newLruHandle lruCacheSize
+  redis <- C.genRedisConnection redisConfig
 
   let state = stateSet (initConfigState mysqlThreads)
+            $ stateSet (initRedisState redisThreads $ fromString prefix)
             $ stateSet (initArticleState mysqlThreads) stateEmpty
 
-  let u = simpleEnv pool prefix (Just lru) :: SimpleEnv ConfigLru
+  let u = simpleEnv pool prefix $ C.mkCache (Just lruHandle) redis
 
   let opts = def { settings = setPort port
                             $ setHost (Host host) (settings def) }
@@ -90,8 +95,7 @@ program Options { getConfigFile  = confFile
   runIO u state mergeData
 
   scottyOptsT opts (runIO u state) $ application [logStdout]
-  where
-        runIO ::  HasMySQL u => u -> StateStore -> GenHaxl u b -> IO b
+  where runIO :: (HasMySQL u, HasOtherEnv C.Cache u) => u -> StateStore -> GenHaxl u b -> IO b
         runIO env s m = do
           env0 <- initEnv s env
           runHaxl env0 m

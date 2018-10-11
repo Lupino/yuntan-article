@@ -5,7 +5,7 @@ module Article.DataSource.Article
     createArticle
   , getArticle
   , removeArticle
-  , getAllArticle
+  , getArticleIdList
   , countAllArticle
   , updateArticle
   , updateArticleCover
@@ -102,9 +102,9 @@ updateArticleContent aid content prefix conn =
   execute conn sql (content, aid)
   where sql = fromString $ concat [ "UPDATE `", prefix, "_articles` SET `content` = ? WHERE `id` = ?" ]
 
-getAllArticle :: From -> Size -> OrderBy -> MySQL [Article]
-getAllArticle from size o prefix conn = query conn sql (from, size)
-  where sql = fromString $ concat [ "SELECT * FROM `", prefix, "_articles` ", show o, " LIMIT ?,?" ]
+getArticleIdList :: From -> Size -> OrderBy -> MySQL [ID]
+getArticleIdList from size o prefix conn = map fromOnly <$> query conn sql (from, size)
+  where sql = fromString $ concat [ "SELECT `id` FROM `", prefix, "_articles` ", show o, " LIMIT ?,?" ]
 
 countAllArticle :: MySQL Int64
 countAllArticle prefix conn = maybe 0 fromOnly . listToMaybe <$> query_ conn sql

@@ -15,12 +15,12 @@ module Article.Router.Helper
   ) where
 
 import           Article
+import           Article.Config          (Cache)
 import           Control.Monad.Reader    (lift)
 import           Data.Int                (Int64)
 import           Data.Text.Lazy          (Text)
 import           Haxl.Core               (GenHaxl)
 import           Web.Scotty.Trans        (param)
-import           Yuntan.Extra.Config     (ConfigLru)
 import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
 import           Yuntan.Types.ListResult (From, ListResult (..), Size,
                                           emptyListResult)
@@ -41,14 +41,14 @@ timelineMeta = lift . getTimelineMeta
 timelineTitle :: HasMySQL u => String -> ActionH u Title
 timelineTitle name = maybe name fst <$> timelineMeta name
 
-timeline :: (HasMySQL u, HasOtherEnv ConfigLru u) => String -> ActionH u (ListResult Article)
+timeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> ActionH u (ListResult Article)
 timeline name = articles' s t
-  where s = flip' (getAllTimeline name) $ desc "art_id"
+  where s = flip' (getArticleListByTimeline name) $ desc "art_id"
         t = countTimeline name
 
-articles :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u (ListResult Article)
+articles :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u (ListResult Article)
 articles = articles' s t
-  where s = flip' getAllArticle $ desc "id"
+  where s = flip' getArticleList $ desc "id"
         t = countAllArticle
 
 flip' :: (a -> b -> c -> d) -> c -> a -> b -> d
@@ -69,12 +69,12 @@ articles' s t = do
                            , getTotal  = total
                            }
 
-article :: (HasMySQL u, HasOtherEnv ConfigLru u) => ActionH u (Maybe Article)
+article :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u (Maybe Article)
 article = do
   aid <- param "art_id"
   lift $ getArticleById aid
 
-requireArticle :: (HasMySQL u, HasOtherEnv ConfigLru u) => (Article -> ActionH u ()) -> ActionH u ()
+requireArticle :: (HasMySQL u, HasOtherEnv Cache u) => (Article -> ActionH u ()) -> ActionH u ()
 requireArticle action = do
   artId <- param "art_id"
 
@@ -98,7 +98,7 @@ requireTag action = do
 merge :: Monad m => ((a -> m ()) -> m ()) -> ((b -> m ()) -> m ()) -> (a -> b -> m ()) -> m ()
 merge f g t = f $ \a -> g $ \b -> t a b
 
-requireTagAndArticle :: (HasMySQL u, HasOtherEnv ConfigLru u) => (Tag -> Article -> ActionH u ()) -> ActionH u ()
+requireTagAndArticle :: (HasMySQL u, HasOtherEnv Cache u) => (Tag -> Article -> ActionH u ()) -> ActionH u ()
 requireTagAndArticle = merge requireTag requireArticle
 
 resultOK :: ActionH u ()

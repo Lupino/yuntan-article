@@ -6,8 +6,10 @@ module Article.Types.MySQL.Article
     Article (..)
   ) where
 
-import           Data.Aeson                         (ToJSON (..), Value (..),
-                                                     decodeStrict, object, (.=))
+import           Data.Aeson                         (FromJSON (..), ToJSON (..),
+                                                     Value (..), decodeStrict,
+                                                     object, withObject, (.:),
+                                                     (.=))
 import           Data.Maybe                         (fromMaybe)
 import           Database.MySQL.Simple.QueryResults (QueryResults, convertError,
                                                      convertResults)
@@ -60,6 +62,21 @@ instance ToJSON Article where
                               , "extra"         .= artExtra
                               , "created_at"    .= artCreatedAt
                               ]
+
+instance FromJSON Article where
+  parseJSON = withObject "GroupMeta" $ \o -> do
+    artID          <- o .: "id"
+    artTitle       <- o .: "title"
+    artSummary     <- o .: "summary"
+    artContent     <- o .: "content"
+    artFromURL     <- o .: "from_url"
+    artFromURLHash <- o .: "from_url_hash"
+    artTags        <- o .: "tags"
+    artTimelines   <- o .: "timelines"
+    artCover       <- o .: "cover"
+    artExtra       <- o .: "extra"
+    artCreatedAt   <- o .: "created_at"
+    return Article{..}
 
 instance Created Article where
   createdAt = artCreatedAt

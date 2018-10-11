@@ -4,7 +4,6 @@ module Article.DataSource.File
     saveFile
   , saveFileWithExtra
   , getFile
-  , getFiles
   , getFileWithKey
   ) where
 
@@ -28,10 +27,6 @@ getFile fid prefix conn = listToMaybe <$> query conn sql (Only fid)
 getFileWithKey :: FileKey -> MySQL (Maybe File)
 getFileWithKey key prefix conn = listToMaybe <$> query conn sql (Only key)
   where sql = fromString $ concat [ "SELECT * FROM `", prefix, "_files` WHERE `key`=?" ]
-
-getFiles :: [ID] -> MySQL [File]
-getFiles ids prefix conn = query conn sql $ Only (In ids)
-  where sql = fromString $ concat [ "SELECT * FROM `", prefix, "_files` WHERE `id` in ?" ]
 
 saveFile :: FileBucket -> FileKey -> MySQL (Maybe File)
 saveFile bucket key prefix conn = do
