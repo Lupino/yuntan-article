@@ -11,6 +11,7 @@ module Article.API
   , updateArticleExtra
   , removeArticle
   , getArticleList
+  , countArticle
 
   , createArticleAndFetch
 
@@ -24,13 +25,12 @@ module Article.API
   , removeTimeline
   , removeTimelineListById
   , getArticleListByTimeline
+  , countTimeline
   , module X
   ) where
 
 import           Article.Config          (Cache, lruEnv, redisEnv)
-import           Article.RawAPI          as X (addTag, countArticle,
-                                               countTimeline, createArticle,
-                                               existsArticle,
+import           Article.RawAPI          as X (addTag, existsArticle,
                                                getAllArticleTagName,
                                                getArticleIdList, getFileById,
                                                getFileWithKey, getTagById,
@@ -53,13 +53,28 @@ import           Yuntan.Extra.Config     (fillValue_)
 import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
 import           Yuntan.Types.ListResult (From, Size)
 import           Yuntan.Types.OrderBy    (OrderBy)
-import           Yuntan.Utils.RedisCache (cached, remove)
+import           Yuntan.Utils.RedisCache (cached, cached', remove)
 
 genArticleKey :: ID -> ByteString
 genArticleKey id0 = fromString $ "article:" ++ show id0
 
+genCountKey :: String -> ByteString
+genCountKey k = fromString $ "count:" ++ k
+
+unCacheCount :: HasOtherEnv Cache u => String -> GenHaxl u a -> GenHaxl u a
+unCacheCount k io = remove redisEnv (genCountKey k) >> io
+
+unCacheTimelineCount :: HasOtherEnv Cache u => [String] -> GenHaxl u ()
+unCacheTimelineCount = mapM_ (\k -> remove redisEnv (genCountKey ("timeline:" ++ k)))
+
 unCacheArticle :: HasOtherEnv Cache u => ID -> GenHaxl u a -> GenHaxl u a
 unCacheArticle id0 io = remove redisEnv (genArticleKey id0) >> io
+
+createArticle
+  :: (HasMySQL u, HasOtherEnv Cache u)
+  => Title -> Summary -> Content -> FromURL -> CreatedAt -> GenHaxl u ID
+createArticle t s c f ct =
+  unCacheCount "article" $ RawAPI.createArticle t s c f ct
 
 getArticleById :: (HasMySQL u, HasOtherEnv Cache u) => ID -> GenHaxl u (Maybe Article)
 getArticleById artId =
@@ -108,8 +123,12 @@ getArticleList f s o = do
   aids <- RawAPI.getArticleIdList f s o
   catMaybes <$> for aids getArticleById
 
+countArticle :: (HasMySQL u, HasOtherEnv Cache u) => GenHaxl u Int64
+countArticle = cached' redisEnv (genCountKey "article") RawAPI.countArticle
+
 removeArticle :: (HasMySQL u, HasOtherEnv Cache u) => ID -> GenHaxl u Int64
-removeArticle artId = unCacheArticle artId $ RawAPI.removeArticle artId
+removeArticle artId =
+  unCacheArticle artId $ unCacheCount "article" $ RawAPI.removeArticle artId
 
 createArticleAndFetch
   :: (HasMySQL u, HasOtherEnv Cache u)
@@ -159,10 +178,13 @@ addTimeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> ID -> GenHaxl u ID
 addTimeline name aid = unCacheArticle aid $ RawAPI.addTimeline name aid
 
 removeTimeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> ID -> GenHaxl u Int64
-removeTimeline name aid = unCacheArticle aid $ RawAPI.removeTimeline name aid
+removeTimeline name aid =
+  unCacheArticle aid $ unCacheCount ("timeline:" ++ name) $ RawAPI.removeTimeline name aid
 
 removeTimelineListById :: (HasMySQL u, HasOtherEnv Cache u) => ID -> GenHaxl u Int64
-removeTimelineListById aid = unCacheArticle aid $ RawAPI.removeTimelineListById aid
+removeTimelineListById aid = unCacheArticle aid $ do
+  unCacheTimelineCount =<< RawAPI.getTimelineListById aid
+  RawAPI.removeTimelineListById aid
 
 getArticleListByTimeline
   :: (HasMySQL u, HasOtherEnv Cache u)
@@ -170,6 +192,10 @@ getArticleListByTimeline
 getArticleListByTimeline name f s o    = do
   aids <- RawAPI.getIdListByTimeline name f s o
   catMaybes <$> for aids getArticleById
+
+countTimeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> GenHaxl u Int64
+countTimeline name =
+  cached' redisEnv (genCountKey ("timeline:" ++ name)) $ RawAPI.countTimeline name
 
 fillAllTimeline :: HasMySQL u => Article -> GenHaxl u Article
 fillAllTimeline art = do

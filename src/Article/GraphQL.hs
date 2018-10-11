@@ -133,12 +133,12 @@ timeline = arrayA' "timeline" $ \ argv -> do
     Just name ->
       map article_ <$> getArticleListByTimeline (unpack name) from size (desc "art_id")
 
-articleCount :: HasMySQL u => Resolver (GenHaxl u)
+articleCount :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
 articleCount = scalarA "article_count" $ \ case
   [] -> countArticle
   _  -> empty
 
-timelineCount :: HasMySQL u => Resolver (GenHaxl u)
+timelineCount :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
 timelineCount = scalarA "timeline_count" $ \ argv ->
   case getTextValue "name" argv of
     Nothing   -> empty
