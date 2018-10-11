@@ -15,7 +15,6 @@ data CardItem = CardItem { cardID        :: ID
                          , cardTitle     :: Title
                          , cardSummary   :: Summary
                          , cardImage     :: Maybe File
-                         , cardURL       :: String
                          , cardTags      :: [TagName]
                          , cardExtra     :: Value
                          , cardCreatedAt :: CreatedAt

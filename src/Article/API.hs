@@ -118,7 +118,6 @@ toCardItem art = do
                   , cardTitle      = title
                   , cardSummary    = summary
                   , cardImage      = file
-                  , cardURL        = uri
                   , cardTags       = tags
                   , cardExtra      = extra
                   , cardCreatedAt  = created
@@ -128,8 +127,6 @@ toCardItem art = do
         title         = take 10 $ artTitle art
         summary       = take 50 $ cleanHtml $ artSummary art
         contentLength = T.length $ artContent art
-        uri | contentLength > 10 = "/t/" ++ show cid ++ ".html"
-            | otherwise          = artFromURL art
 
 
         key     = takeFileKey . firstImage $ artSummary art
