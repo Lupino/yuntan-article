@@ -46,7 +46,6 @@ import           Data.ByteString         (ByteString)
 import           Data.Int                (Int64)
 import           Data.Maybe              (catMaybes, isJust)
 import           Data.String             (fromString)
-import qualified Data.Text               as T (length)
 import           Data.Traversable        (for)
 import           Haxl.Core               (GenHaxl)
 import           System.FilePath         (takeFileName)
@@ -63,11 +62,18 @@ unCacheArticle :: HasOtherEnv Cache u => ID -> GenHaxl u a -> GenHaxl u a
 unCacheArticle id0 io = remove redisEnv (genArticleKey id0) >> io
 
 getArticleById :: (HasMySQL u, HasOtherEnv Cache u) => ID -> GenHaxl u (Maybe Article)
-getArticleById artId = cached redisEnv (genArticleKey artId) $ do
-  mart <- RawAPI.getArticleById artId
-  case mart of
-    Just art -> fmap Just (fillArticleExtra =<< fillAllTimeline =<< fillArticleCover =<< fillAllTagName art)
-    Nothing  -> return Nothing
+getArticleById artId =
+  cached redisEnv (genArticleKey artId) $
+    fillArticle =<< RawAPI.getArticleById artId
+
+fillArticle :: (HasMySQL u, HasOtherEnv Cache u) => Maybe Article -> GenHaxl u (Maybe Article)
+fillArticle Nothing = return Nothing
+fillArticle (Just art) =
+  fmap Just
+    $ fillArticleExtra
+    =<< fillAllTimeline
+    =<< fillArticleCover
+    =<< fillAllTagName art
 
 updateArticle :: (HasMySQL u, HasOtherEnv Cache u) => ID -> Title -> Summary -> Content -> GenHaxl u Int64
 updateArticle artId t s c = unCacheArticle artId $ RawAPI.updateArticle artId t s c
@@ -125,8 +131,6 @@ toCardItem art = do
   where cid           = artID art
         title         = take 10 $ artTitle art
         summary       = take 50 $ cleanHtml $ artSummary art
-        contentLength = T.length $ artContent art
-
 
         key     = takeFileKey . firstImage $ artSummary art
         cover   = artCover art
