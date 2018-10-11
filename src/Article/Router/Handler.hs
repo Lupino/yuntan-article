@@ -35,7 +35,7 @@ module Article.Router.Handler
   , getConfigHandler
   ) where
 
-import           Control.Monad           (void)
+import           Control.Monad           (unless, void, when)
 import           Control.Monad.Reader    (lift)
 
 import           Data.Aeson              (Value (..), decode, object, (.=))
@@ -93,14 +93,12 @@ updateArticleHandler Article{artID = aid} = do
   summary <- safeParam "summary" ""
   content <- safeParam "content" (""::T.Text)
 
-  void $ lift $ do
-    if (not . null) title && (not . null) summary && T.length content > 0 then
-      updateArticle aid title summary content
-    else do
-      changed1 <- if (not . null) title then updateArticleTitle aid title else return 0
-      changed2 <- if (not . null) summary then updateArticleSummary aid summary else return 0
-      changed3 <- if T.length content > 0 then updateArticleContent aid content else return 0
-      return (changed1 + changed2 + changed3)
+  if (not . null) title && (not . null) summary && T.length content > 0 then
+    lift . void $ updateArticle aid title summary content
+  else do
+    unless (null title) $ lift . void $ updateArticleTitle aid title
+    unless (null summary) $ lift . void $ updateArticleSummary aid summary
+    when (T.length content > 0) $ lift . void $ updateArticleContent aid content
 
   resultOK
 

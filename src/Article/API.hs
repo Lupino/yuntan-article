@@ -62,7 +62,6 @@ genArticleKey id0 = fromString $ "article:" ++ show id0
 unCacheArticle :: HasOtherEnv Cache u => ID -> GenHaxl u a -> GenHaxl u a
 unCacheArticle id0 io = remove redisEnv (genArticleKey id0) >> io
 
-
 getArticleById :: (HasMySQL u, HasOtherEnv Cache u) => ID -> GenHaxl u (Maybe Article)
 getArticleById artId = cached redisEnv (genArticleKey artId) $ do
   mart <- RawAPI.getArticleById artId
