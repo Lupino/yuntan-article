@@ -61,14 +61,20 @@ genArticleKey id0 = fromString $ "article:" ++ show id0
 genCountKey :: String -> ByteString
 genCountKey k = fromString $ "count:" ++ k
 
+($>) :: GenHaxl u a -> GenHaxl u () -> GenHaxl u a
+io $> a = do
+  r <- io
+  a
+  return r
+
 unCacheCount :: HasOtherEnv Cache u => String -> GenHaxl u a -> GenHaxl u a
-unCacheCount k io = remove redisEnv (genCountKey k) >> io
+unCacheCount k io = io $> remove redisEnv (genCountKey k)
 
 unCacheTimelineCount :: HasOtherEnv Cache u => [String] -> GenHaxl u ()
 unCacheTimelineCount = mapM_ (\k -> remove redisEnv (genCountKey ("timeline:" ++ k)))
 
 unCacheArticle :: HasOtherEnv Cache u => ID -> GenHaxl u a -> GenHaxl u a
-unCacheArticle id0 io = remove redisEnv (genArticleKey id0) >> io
+unCacheArticle id0 io = io $> remove redisEnv (genArticleKey id0)
 
 createArticle
   :: (HasMySQL u, HasOtherEnv Cache u)
@@ -183,8 +189,10 @@ removeTimeline name aid =
 
 removeTimelineListById :: (HasMySQL u, HasOtherEnv Cache u) => ID -> GenHaxl u Int64
 removeTimelineListById aid = unCacheArticle aid $ do
-  unCacheTimelineCount =<< RawAPI.getTimelineListById aid
-  RawAPI.removeTimelineListById aid
+  names <- RawAPI.getTimelineListById aid
+  r <- RawAPI.removeTimelineListById aid
+  unCacheTimelineCount names
+  pure r
 
 getArticleListByTimeline
   :: (HasMySQL u, HasOtherEnv Cache u)
