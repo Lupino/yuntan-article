@@ -3,7 +3,8 @@
 {-# LANGUAGE RecordWildCards   #-}
 module Article.Types.MySQL.Article
   (
-    Article (..)
+    Article (..),
+    pickExtra
   ) where
 
 import           Data.Aeson                         (FromJSON (..), ToJSON (..),
@@ -11,9 +12,11 @@ import           Data.Aeson                         (FromJSON (..), ToJSON (..),
                                                      object, withObject, (.:),
                                                      (.=))
 import           Data.Maybe                         (fromMaybe)
+import           Data.Text                          (Text)
 import           Database.MySQL.Simple.QueryResults (QueryResults, convertError,
                                                      convertResults)
 import           Database.MySQL.Simple.Result       (convert)
+import           Yuntan.Utils.JSON                  (pickValue)
 
 import           Article.Types.Class
 import           Article.Types.Internal
@@ -80,3 +83,7 @@ instance FromJSON Article where
 
 instance Created Article where
   createdAt = artCreatedAt
+
+pickExtra :: [Text] -> Article -> Article
+pickExtra [] art   = art
+pickExtra keys art = art {artExtra = pickValue keys $ artExtra art}

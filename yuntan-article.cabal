@@ -68,6 +68,7 @@ library
                      , wai
 
                      , graphql
+                     , MissingH
   default-language:    Haskell2010
 
 executable yuntan-article

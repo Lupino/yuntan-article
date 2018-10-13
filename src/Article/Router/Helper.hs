@@ -12,13 +12,15 @@ module Article.Router.Helper
   , requireTag
   , requireTagAndArticle
   , resultOK
+  , extraKeys
   ) where
 
 import           Article
 import           Article.Config          (Cache)
 import           Control.Monad.Reader    (lift)
 import           Data.Int                (Int64)
-import           Data.Text.Lazy          (Text)
+import           Data.String.Utils       (split)
+import           Data.Text               (Text, pack)
 import           Haxl.Core               (GenHaxl)
 import           Web.Scotty.Trans        (param)
 import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
@@ -103,3 +105,10 @@ requireTagAndArticle = merge requireTag requireArticle
 
 resultOK :: ActionH u ()
 resultOK = ok "result" ("OK" :: Text)
+
+extraKeys :: ActionH u [Text]
+extraKeys = do
+  ks <- safeParam "extra_keys" (""::String)
+
+  if null ks then return []
+             else return . map pack $ split "," ks
