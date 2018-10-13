@@ -13,6 +13,7 @@ module Article.Router.Handler
   , clearArticleExtraHandler
   , removeArticleHandler
   , getArticleHandler
+  , getArticleExtraHandler
   , getAllArticleHandler
   , existsArticleHandler
 
@@ -52,7 +53,8 @@ import           Article.Router.Helper
 import           Data.GraphQL            (graphql)
 import           Yuntan.Types.ListResult (ListResult (getResult), merge)
 import           Yuntan.Types.Scotty     (ActionH)
-import           Yuntan.Utils.JSON       (differenceValue, unionValue)
+import           Yuntan.Utils.JSON       (differenceValue, pickValue,
+                                          unionValue)
 import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
                                           maybeNotFound, ok, okListResult,
                                           safeParam)
@@ -157,6 +159,11 @@ getArticleHandler :: Article -> ActionH u ()
 getArticleHandler art = do
   exkeys <- extraKeys
   ok "article" $ pickExtra exkeys art
+
+getArticleExtraHandler :: Article -> ActionH u ()
+getArticleExtraHandler art = do
+  exkeys <- extraKeys
+  ok "extra" $ pickValue exkeys $ artExtra art
 
 existsArticleHandler :: HasMySQL u => ActionH u ()
 existsArticleHandler = do

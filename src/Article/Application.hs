@@ -23,6 +23,7 @@ application mids = do
   post   "/api/articles/:art_id/cover"       $ requireArticle updateArticleCoverHandler
   delete "/api/articles/:art_id/cover"       $ requireArticle removeArticleCoverHandler
   post   "/api/articles/:art_id/extra"       $ requireArticle updateArticleExtraHandler
+  get    "/api/articles/:art_id/extra"       $ requireArticle getArticleExtraHandler
   delete "/api/articles/:art_id/extra"       $ requireArticle removeArticleExtraHandler
   post   "/api/articles/:art_id/extra/clear" $ requireArticle clearArticleExtraHandler
   delete "/api/articles/:art_id/"            removeArticleHandler
