@@ -93,6 +93,20 @@ updateTable_1511777472 prefix conn =
     , " MODIFY COLUMN `title` varchar(150) NOT NULL"
     ]
 
+updateTable_1539394618 :: MySQL ()
+updateTable_1539394618 prefix conn =
+  void $ execute_ conn . fromString $ concat
+    [ "ALTER TABLE `", prefix, "_articles`"
+    , " MODIFY COLUMN `content` longtext"
+    ]
+
+updateTable_1539394681 :: MySQL ()
+updateTable_1539394681 prefix conn =
+  void $ execute_ conn . fromString $ concat
+    [ "ALTER TABLE `", prefix, "_articles`"
+    , " MODIFY COLUMN `extra` longtext"
+    ]
+
 versionList :: VersionList
 versionList =
   [ (1, [ createArticleTagTable
@@ -104,6 +118,7 @@ versionList =
         ])
   , (2, [updateTable_1511777472])
   , (3, [createConfigTable])
+  , (4, [updateTable_1539394618, updateTable_1539394681])
   ]
 
 mergeData :: MySQL ()
