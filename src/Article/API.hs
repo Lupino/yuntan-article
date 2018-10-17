@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Article.API
@@ -63,8 +64,8 @@ genCountKey k = fromString $ "count:" ++ k
 
 ($>) :: GenHaxl u a -> GenHaxl u () -> GenHaxl u a
 io $> a = do
-  r <- io
-  a
+  !r <- io
+  !_ <- a
   return r
 
 unCacheCount :: HasOtherEnv Cache u => String -> GenHaxl u a -> GenHaxl u a
