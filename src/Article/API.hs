@@ -182,7 +182,8 @@ fillAllTagName art = do
   return $ art { artTags = tags }
 
 addTimeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> ID -> GenHaxl u ID
-addTimeline name aid = unCacheArticle aid $ RawAPI.addTimeline name aid
+addTimeline name aid =
+  unCacheArticle aid $ unCacheCount ("timeline:" ++ name) $ RawAPI.addTimeline name aid
 
 removeTimeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> ID -> GenHaxl u Int64
 removeTimeline name aid =
