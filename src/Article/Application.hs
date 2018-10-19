@@ -52,6 +52,3 @@ application mids = do
   post   "/api/file/:key"                    saveFileHandler
 
   post "/api/graphql/"                       graphqlHandler
-
-  get "/api/config/:key/" getConfigHandler
-  post "/api/config/:key/" setConfigHandler

@@ -31,9 +31,6 @@ module Article.Router.Handler
   , getTimelineMetaHandler
 
   , graphqlHandler
-
-  , setConfigHandler
-  , getConfigHandler
   ) where
 
 import           Control.Monad           (unless, void, when)
@@ -47,7 +44,7 @@ import           Web.Scotty.Trans        (body, json, param, rescue)
 import qualified Data.Text               as T (Text, length)
 
 import           Article
-import           Article.Config          (Cache, lruEnv)
+import           Article.Config          (Cache)
 import           Article.GraphQL         (schema)
 import           Article.Router.Helper
 import           Data.GraphQL            (graphql)
@@ -59,7 +56,6 @@ import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
                                           maybeNotFound, ok, okListResult,
                                           safeParam)
 
-import           Yuntan.Extra.Config     (getConfigJSON', setConfig')
 import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
 
 saveFileHandler :: HasMySQL u => ActionH u ()
@@ -282,16 +278,3 @@ graphqlHandler = do
   query <- param "query"
   ret <- lift $ graphql schema query
   json ret
-
-setConfigHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
-setConfigHandler = do
-  k <- param "key"
-  v <- toStrict <$> body
-  lift $ setConfig' lruEnv k v
-  resultOK
-
-getConfigHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
-getConfigHandler = do
-  k <- param "key"
-  v <- lift (getConfigJSON' lruEnv k)
-  ok "result" (v :: Maybe Value)

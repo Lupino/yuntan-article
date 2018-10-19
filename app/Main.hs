@@ -8,7 +8,6 @@ import           Article                              (mergeData)
 import           Article.Application
 import           Article.DataSource                   (initArticleState)
 import           Data.Default.Class                   (def)
-import           Data.LruCache.IO                     (newLruHandle)
 import           Data.Streaming.Network.Internal      (HostPreference (Host))
 import           Data.String                          (fromString)
 import           Haxl.Core                            (GenHaxl, StateStore,
@@ -16,7 +15,6 @@ import           Haxl.Core                            (GenHaxl, StateStore,
                                                        stateEmpty, stateSet)
 import           Network.Wai.Handler.Warp             (setHost, setPort)
 import           Web.Scotty.Trans                     (scottyOptsT, settings)
-import           Yuntan.Extra.Config                  (initConfigState)
 import           Yuntan.Types.HasMySQL                (HasMySQL, HasOtherEnv,
                                                        simpleEnv)
 import           Yuntan.Utils.RedisCache              (initRedisState)
@@ -75,19 +73,16 @@ program Options { getConfigFile  = confFile
 
   let mysqlConfig  = C.mysqlConfig conf
       mysqlThreads = C.mysqlHaxlNumThreads mysqlConfig
-      lruCacheSize = C.lruCacheSize conf
       redisConfig  = C.redisConfig conf
       redisThreads = C.redisHaxlNumThreads redisConfig
 
   pool <- C.genMySQLPool mysqlConfig
-  lruHandle <- newLruHandle lruCacheSize
   redis <- C.genRedisConnection redisConfig
 
-  let state = stateSet (initConfigState mysqlThreads)
-            $ stateSet (initRedisState redisThreads $ fromString prefix)
+  let state = stateSet (initRedisState redisThreads $ fromString prefix)
             $ stateSet (initArticleState mysqlThreads) stateEmpty
 
-  let u = simpleEnv pool prefix $ C.mkCache (Just lruHandle) redis
+  let u = simpleEnv pool prefix $ C.mkCache redis
 
   let opts = def { settings = setPort port
                             $ setHost (Host host) (settings def) }

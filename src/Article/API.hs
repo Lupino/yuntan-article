@@ -30,7 +30,7 @@ module Article.API
   , module X
   ) where
 
-import           Article.Config          (Cache, lruEnv, redisEnv)
+import           Article.Config          (Cache, redisEnv)
 import           Article.RawAPI          as X (addTag, existsArticle,
                                                getAllArticleTagName,
                                                getArticleIdList, getFileById,
@@ -50,7 +50,6 @@ import           Data.String             (fromString)
 import           Data.Traversable        (for)
 import           Haxl.Core               (GenHaxl)
 import           System.FilePath         (takeFileName)
-import           Yuntan.Extra.Config     (fillValue_)
 import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
 import           Yuntan.Types.ListResult (From, Size)
 import           Yuntan.Types.OrderBy    (OrderBy)
@@ -92,8 +91,7 @@ fillArticle :: (HasMySQL u, HasOtherEnv Cache u) => Maybe Article -> GenHaxl u (
 fillArticle Nothing = return Nothing
 fillArticle (Just art) =
   fmap Just
-    $ fillArticleExtra
-    =<< fillAllTimeline
+    $ fillAllTimeline
     =<< fillArticleCover
     =<< fillAllTagName art
 
@@ -211,8 +209,3 @@ fillAllTimeline :: HasMySQL u => Article -> GenHaxl u Article
 fillAllTimeline art = do
   timelines <- RawAPI.getTimelineListById $ artID art
   return $ art { artTimelines = timelines }
-
-fillArticleExtra :: (HasMySQL u, HasOtherEnv Cache u) => Article -> GenHaxl u Article
-fillArticleExtra = fillValue_ lruEnv "article-extra" artExtra update
-  where update :: Value -> Article -> Article
-        update v u = u {artExtra = v}
