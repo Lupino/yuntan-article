@@ -28,6 +28,7 @@ application mids = do
   post   "/api/articles/:art_id/extra/clear" $ requireArticle clearArticleExtraHandler
   delete "/api/articles/:art_id/"            removeArticleHandler
   get    "/api/articles/:art_id/"            $ requireArticle getArticleHandler
+  get    "/api/articles/:art_id/graphql/"    $ requireArticle graphqlByArticleHandler
   get    "/api/articles/"                    getAllArticleHandler
 
   get    "/api/tags/:tag_id/"                $ requireTag getTagHandler

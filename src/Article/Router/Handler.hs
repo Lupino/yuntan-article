@@ -31,21 +31,21 @@ module Article.Router.Handler
   , getTimelineMetaHandler
 
   , graphqlHandler
+  , graphqlByArticleHandler
   ) where
 
 import           Control.Monad           (unless, void, when)
 import           Control.Monad.Reader    (lift)
 
 import           Data.Aeson              (Value (..), decode, object, (.=))
-import           Data.ByteString.Lazy    (toStrict)
 import           Data.Maybe              (fromMaybe, isJust)
-import           Web.Scotty.Trans        (body, json, param, rescue)
+import           Web.Scotty.Trans        (json, param, rescue)
 
 import qualified Data.Text               as T (Text, length)
 
 import           Article
 import           Article.Config          (Cache)
-import           Article.GraphQL         (schema)
+import           Article.GraphQL         (schema, schemaByArticle)
 import           Article.Router.Helper
 import           Data.GraphQL            (graphql)
 import           Yuntan.Types.ListResult (ListResult (getResult), merge)
@@ -277,4 +277,10 @@ graphqlHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 graphqlHandler = do
   query <- param "query"
   ret <- lift $ graphql schema query
+  json ret
+
+graphqlByArticleHandler :: (HasMySQL u, HasOtherEnv Cache u) => Article -> ActionH u ()
+graphqlByArticleHandler art = do
+  query <- param "query"
+  ret <- lift $ graphql (schemaByArticle art) query
   json ret

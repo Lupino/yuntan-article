@@ -4,8 +4,8 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Article.GraphQL
-  (
-    schema
+  ( schema
+  , schemaByArticle
   ) where
 
 import           Article.API
@@ -14,7 +14,7 @@ import           Article.Types
 import           Control.Applicative   (Alternative (..))
 import           Data.GraphQL.Schema   (Resolver, Schema, arrayA', object,
                                         objectA', scalar, scalarA)
-import           Data.List.NonEmpty    (NonEmpty ((:|)))
+import           Data.List.NonEmpty    (NonEmpty ((:|)), fromList)
 import           Data.Maybe            (fromMaybe)
 import           Data.Text             (unpack)
 import           Haxl.Core             (GenHaxl)
@@ -67,6 +67,9 @@ import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, pickValue,
 
 schema :: (HasMySQL u, HasOtherEnv Cache u) => Schema (GenHaxl u)
 schema = file :| [article, articles, tag, timeline, articleCount, timelineCount, timelineMeta]
+
+schemaByArticle :: (HasMySQL u, HasOtherEnv Cache u) => Article -> Schema (GenHaxl u)
+schemaByArticle art = fromList (article_ art)
 
 file :: HasMySQL u => Resolver (GenHaxl u)
 file = objectA' "file" $ \argv ->
