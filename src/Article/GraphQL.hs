@@ -20,7 +20,8 @@ import           Data.Text             (unpack)
 import           Haxl.Core             (GenHaxl)
 import           Yuntan.Types.HasMySQL (HasMySQL, HasOtherEnv)
 import           Yuntan.Types.OrderBy  (desc)
-import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, value)
+import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, pickValue,
+                                        value)
 
 --  type Query {
 --    file(key: String!): File
@@ -38,6 +39,7 @@ import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, value)
 --    key: String
 --    bucket: String
 --    extra: Value
+--    pick_extra(keys: [String]): Value
 --    created_at: Int
 --  }
 --  type Article {
@@ -50,6 +52,7 @@ import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, value)
 --    timelines: [String]
 --    cover: File
 --    extra: Value
+--    pick_extra(keys: [String]): Value
 --    created_at: Int
 --  }
 --  type Tag {
@@ -73,11 +76,12 @@ file = objectA' "file" $ \argv ->
 
 file_ :: HasMySQL u => File -> [Resolver (GenHaxl u)]
 file_ File{..} =
-  [ scalar "id"         fileID
-  , scalar "key"        fileKey
-  , scalar "bucket"     fileBucket
-  , value  "extra"      fileExtra
-  , scalar "created_at" fileCreatedAt
+  [ scalar    "id"         fileID
+  , scalar    "key"        fileKey
+  , scalar    "bucket"     fileBucket
+  , value     "extra"      fileExtra
+  , pickValue "pick_extra" fileExtra
+  , scalar    "created_at" fileCreatedAt
   ]
 
 article :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
@@ -88,16 +92,17 @@ article = objectA' "article" $ \argv ->
 
 article_ :: HasMySQL u => Article -> [Resolver (GenHaxl u)]
 article_ Article{..} =
-  [ scalar "id"         artID
-  , scalar "title"      artTitle
-  , scalar "summary"    artSummary
-  , scalar "content"    artContent
-  , scalar "from_url"   artFromURL
-  , scalar "tags"       artTags
-  , scalar "timelines"  artTimelines
-  , object "cover"      (maybe [] file_ artCover)
-  , value  "extra"      artExtra
-  , scalar "created_at" artCreatedAt
+  [ scalar    "id"         artID
+  , scalar    "title"      artTitle
+  , scalar    "summary"    artSummary
+  , scalar    "content"    artContent
+  , scalar    "from_url"   artFromURL
+  , scalar    "tags"       artTags
+  , scalar    "timelines"  artTimelines
+  , object    "cover"      (maybe [] file_ artCover)
+  , value     "extra"      artExtra
+  , pickValue "pick_extra" artExtra
+  , scalar    "created_at" artCreatedAt
   ]
 
 articles :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
