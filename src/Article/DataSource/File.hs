@@ -8,7 +8,7 @@ module Article.DataSource.File
   ) where
 
 import           Control.Monad         (void)
-import           Database.MySQL.Simple (In (..), Only (..), execute, query)
+import           Database.MySQL.Simple (Only (..), execute, query)
 import           Yuntan.Types.HasMySQL (MySQL)
 
 import           Control.Applicative   ((<$>))
