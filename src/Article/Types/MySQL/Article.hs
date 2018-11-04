@@ -2,9 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Article.Types.MySQL.Article
-  (
-    Article (..),
-    pickExtra
+  ( Article (..)
+  , pickExtra
+  , setJsonContent
+  , pickContent
   ) where
 
 import           Data.Aeson                         (FromJSON (..), ToJSON (..),
@@ -13,6 +14,7 @@ import           Data.Aeson                         (FromJSON (..), ToJSON (..),
                                                      (.=))
 import           Data.Maybe                         (fromMaybe)
 import           Data.Text                          (Text)
+import           Data.Text.Encoding                 (encodeUtf8)
 import           Database.MySQL.Simple.QueryResults (QueryResults, convertError,
                                                      convertResults)
 import           Database.MySQL.Simple.Result       (convert)
@@ -22,18 +24,21 @@ import           Article.Types.Class
 import           Article.Types.Internal
 import           Article.Types.MySQL.File
 
-data Article = Article { artID          :: ID
-                       , artTitle       :: Title
-                       , artSummary     :: Summary
-                       , artContent     :: Content
-                       , artFromURL     :: FromURL
-                       , artFromURLHash :: FromURLHASH
-                       , artCover       :: Maybe File
-                       , artTags        :: [TagName]
-                       , artTimelines   :: [String]
-                       , artExtra       :: Value
-                       , artCreatedAt   :: CreatedAt
-                       }
+data Article = Article
+  { artID          :: ID
+  , artTitle       :: Title
+  , artSummary     :: Summary
+  , artContent     :: Content
+  , artJsonContent :: Bool
+  , artContentJson :: Value
+  , artFromURL     :: FromURL
+  , artFromURLHash :: FromURLHASH
+  , artCover       :: Maybe File
+  , artTags        :: [TagName]
+  , artTimelines   :: [String]
+  , artExtra       :: Value
+  , artCreatedAt   :: CreatedAt
+  }
   deriving (Show)
 
 instance QueryResults Article where
@@ -50,21 +55,25 @@ instance QueryResults Article where
             !artCreatedAt   = convert fi vi
             artTags         = []
             artTimelines    = []
+            artJsonContent  = False
+            artContentJson  = Null
     convertResults fs vs  = convertError fs vs 2
 
 instance ToJSON Article where
-  toJSON Article{..} = object [ "id"            .= artID
-                              , "title"         .= artTitle
-                              , "summary"       .= artSummary
-                              , "content"       .= artContent
-                              , "from_url"      .= artFromURL
-                              , "from_url_hash" .= artFromURLHash
-                              , "tags"          .= artTags
-                              , "timelines"     .= artTimelines
-                              , "cover"         .= artCover
-                              , "extra"         .= artExtra
-                              , "created_at"    .= artCreatedAt
-                              ]
+  toJSON Article{..} = object
+    [ "id"            .= artID
+    , "title"         .= artTitle
+    , "summary"       .= artSummary
+    , "content"       .= content
+    , "from_url"      .= artFromURL
+    , "from_url_hash" .= artFromURLHash
+    , "tags"          .= artTags
+    , "timelines"     .= artTimelines
+    , "cover"         .= artCover
+    , "extra"         .= artExtra
+    , "created_at"    .= artCreatedAt
+    ]
+    where content = if artJsonContent then artContentJson else toJSON artContent
 
 instance FromJSON Article where
   parseJSON = withObject "GroupMeta" $ \o -> do
@@ -79,7 +88,11 @@ instance FromJSON Article where
     artCover       <- o .: "cover"
     artExtra       <- o .: "extra"
     artCreatedAt   <- o .: "created_at"
-    return Article{..}
+    return Article
+      { artJsonContent = False
+      , artContentJson = Null
+      , ..
+      }
 
 instance Created Article where
   createdAt = artCreatedAt
@@ -87,3 +100,13 @@ instance Created Article where
 pickExtra :: [Text] -> Article -> Article
 pickExtra [] art   = art
 pickExtra keys art = art {artExtra = pickValue keys $ artExtra art}
+
+setJsonContent :: Article -> Article
+setJsonContent art = art
+  { artJsonContent = True
+  , artContentJson = fromMaybe Null . decodeStrict . encodeUtf8 $ artContent art
+  }
+
+pickContent :: [Text] -> Article -> Article
+pickContent keys art = a {artContentJson = pickValue keys $ artContentJson a}
+  where a = if artJsonContent art then art else setJsonContent art

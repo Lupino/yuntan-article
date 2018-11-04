@@ -13,6 +13,8 @@ module Article.Router.Helper
   , requireTagAndArticle
   , resultOK
   , extraKeys
+  , preprocessArticle
+  , preprocessArticleList
   ) where
 
 import           Article
@@ -112,3 +114,31 @@ extraKeys = do
 
   if null ks then return []
              else return . map pack $ split "," ks
+
+contentKeys :: ActionH u [Text]
+contentKeys = do
+  ks <- safeParam "content_keys" (""::String)
+
+  if null ks then return []
+             else return . map pack $ split "," ks
+
+isJsonContent :: ActionH u Bool
+isJsonContent = not . null <$> safeParam "content_json" ("" :: String)
+
+preprocessArticle :: Article -> ActionH u Article
+preprocessArticle = checkExtraKeys $ checkJsonContent $ checkContentKeys return
+  where checkExtraKeys :: (Article -> ActionH u Article) -> Article -> ActionH u Article
+        checkExtraKeys next a = next =<< (flip pickExtra a <$> extraKeys)
+
+        checkJsonContent :: (Article -> ActionH u Article) -> Article -> ActionH u Article
+        checkJsonContent next a = do
+          isJson <- isJsonContent
+          if isJson then next (setJsonContent a) else next a
+
+        checkContentKeys :: (Article -> ActionH u Article) -> Article -> ActionH u Article
+        checkContentKeys next a = do
+          keys <- contentKeys
+          if null keys then next a else next (pickContent keys a)
+
+preprocessArticleList :: [Article] -> ActionH u [Article]
+preprocessArticleList = mapM preprocessArticle

@@ -152,9 +152,7 @@ removeArticleHandler = do
 
 
 getArticleHandler :: Article -> ActionH u ()
-getArticleHandler art = do
-  exkeys <- extraKeys
-  ok "article" $ pickExtra exkeys art
+getArticleHandler art = ok "article" =<< preprocessArticle art
 
 getArticleExtraHandler :: Article -> ActionH u ()
 getArticleExtraHandler art = do
@@ -264,9 +262,10 @@ getTimelineMetaHandler = do
 resultArticle :: HasMySQL u => ListResult Article -> ActionH u ()
 resultArticle result_ = do
   isCard <- safeParam "card" ("" :: String)
-  exkeys <- extraKeys
 
-  let result = result_ {getResult = map (pickExtra exkeys) $ getResult result_}
+  arts <- preprocessArticleList $ getResult result_
+
+  let result = result_ {getResult = arts}
 
   if null isCard then okListResult "articles" result
                  else do
