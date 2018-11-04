@@ -15,15 +15,24 @@ module Article.Router.Helper
   , extraKeys
   , preprocessArticle
   , preprocessArticleList
+  , checkSed
   ) where
 
 import           Article
 import           Article.Config          (Cache)
+import           Control.Monad.IO.Class  (liftIO)
 import           Control.Monad.Reader    (lift)
+import           Data.Aeson              (Value)
 import           Data.Int                (Int64)
+import qualified Data.Map.Strict         as M (toList)
 import           Data.String.Utils       (split)
 import           Data.Text               (Text, pack)
 import           Haxl.Core               (GenHaxl)
+import           JL.Functions            (scope)
+import           JL.Interpreter          (desugar, eval, subst)
+import           JL.Parser               (parseText)
+import           JL.Serializer           (coreToValue, valueToExpression)
+import           JL.Types                (Expression (..))
 import           Web.Scotty.Trans        (param)
 import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
 import           Yuntan.Types.ListResult (From, ListResult (..), Size,
@@ -142,3 +151,17 @@ preprocessArticle = checkExtraKeys $ checkJsonContent $ checkContentKeys return
 
 preprocessArticleList :: [Article] -> ActionH u [Article]
 preprocessArticleList = mapM preprocessArticle
+
+checkSed :: Value -> ActionH u Value
+checkSed j = do
+  inp <- safeParam "jl" (""::String)
+  if null inp then return j
+  else
+    case parseText "" (pack inp) of
+      Left err -> do
+        liftIO $ print err
+        return j
+      Right expr0 -> do
+        let expr = ApplicationExpression expr0 (valueToExpression j)
+        let core = eval (foldl (\e (v, f) -> subst v f e) (desugar expr) (M.toList scope))
+        return $ coreToValue core

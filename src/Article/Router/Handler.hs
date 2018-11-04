@@ -37,7 +37,8 @@ module Article.Router.Handler
 import           Control.Monad           (unless, void, when)
 import           Control.Monad.Reader    (lift)
 
-import           Data.Aeson              (Value (..), decode, object, (.=))
+import           Data.Aeson              (Value (..), decode, object, toJSON,
+                                          (.=))
 import           Data.Maybe              (fromMaybe, isJust)
 import           Web.Scotty.Trans        (json, param, rescue)
 
@@ -48,13 +49,13 @@ import           Article.Config          (Cache)
 import           Article.GraphQL         (schema, schemaByArticle)
 import           Article.Router.Helper
 import           Data.GraphQL            (graphql)
-import           Yuntan.Types.ListResult (ListResult (getResult), merge)
+import           Yuntan.Types.ListResult (ListResult (getResult),
+                                          fromListResult, merge)
 import           Yuntan.Types.Scotty     (ActionH)
 import           Yuntan.Utils.JSON       (differenceValue, pickValue,
                                           unionValue)
 import           Yuntan.Utils.Scotty     (errBadRequest, errNotFound,
-                                          maybeNotFound, ok, okListResult,
-                                          safeParam)
+                                          maybeNotFound, ok, safeParam)
 
 import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
 
@@ -152,7 +153,7 @@ removeArticleHandler = do
 
 
 getArticleHandler :: Article -> ActionH u ()
-getArticleHandler art = ok "article" =<< preprocessArticle art
+getArticleHandler art = ok "article" =<< checkSed . toJSON =<< preprocessArticle art
 
 getArticleExtraHandler :: Article -> ActionH u ()
 getArticleExtraHandler art = do
@@ -267,10 +268,10 @@ resultArticle result_ = do
 
   let result = result_ {getResult = arts}
 
-  if null isCard then okListResult "articles" result
+  if null isCard then json =<< checkSed (fromListResult "articles" result)
                  else do
                       cards <- lift $ mapM toCardItem $ getResult result
-                      okListResult "cards" $ merge cards result
+                      json =<< checkSed (fromListResult "cards" $ merge cards result)
 
 graphqlHandler :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u ()
 graphqlHandler = do
