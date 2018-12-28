@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-10.2
+resolver: lts-12.20
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -37,10 +37,11 @@ resolver: lts-10.2
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- location:
-    git: https://github.com/Lupino/yuntan-common.git
-    commit: 2ec5bf2176f327da715016ee4d93cc317870b9d5
-  extra-dep: true
+# Dependency packages to be pulled from upstream that are not in the resolver
+# (e.g., acme-missiles-0.3)
+extra-deps:
+- git: https://github.com/Lupino/yuntan-common.git
+  commit: cfc461bd81713b3d9373bc12fe6063ae13a9339f
   subdirs:
   - yuntan-common-scotty
   - yuntan-common-scotty-type
@@ -51,13 +52,10 @@ packages:
   - yuntan-common-json
   - yuntan-common-order
   - yuntan-common-haxl
-- location:
-    git: https://github.com/jdnavarro/graphql-haskell.git
-    commit: 40f9024b51900c73bc0f65444c16022bd73820be
-  extra-dep: true
-# Dependency packages to be pulled from upstream that are not in the resolver
-# (e.g., acme-missiles-0.3)
-# extra-deps:
+- git: https://github.com/jdnavarro/graphql-haskell.git
+  commit: 40f9024b51900c73bc0f65444c16022bd73820be
+- git: https://github.com/Lupino/jl.git
+  commit: b37389f09bf140e0afcc4405e95c9185ce342d20
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
@@ -66,8 +64,6 @@ packages:
 extra-package-dbs: []
 
 # Control whether we use the GHC we find on the path
-system-ghc: true
-#
 # Require a specific version of stack, using version ranges
 # require-stack-version: -any # Default
 # require-stack-version: ">=1.3"
@@ -82,5 +78,3 @@ system-ghc: true
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
-#
-local-bin-path: bin
