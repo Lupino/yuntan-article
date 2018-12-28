@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-12.20
+resolver: lts-12.14
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -51,7 +51,8 @@ extra-deps:
   - yuntan-common-result
   - yuntan-common-json
   - yuntan-common-order
-  - yuntan-common-haxl
+  - yuntan-common-config-redis
+  - yuntan-common-redis-caching
 - git: https://github.com/jdnavarro/graphql-haskell.git
   commit: 40f9024b51900c73bc0f65444c16022bd73820be
 - git: https://github.com/Lupino/jl.git
