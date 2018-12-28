@@ -1,6 +1,6 @@
 FROM alpine:3.8
 
-RUN apk update && apk add ghc curl libc-dev pcre-dev git mysql-dev
+RUN apk update && apk add ghc curl libc-dev pcre-dev git mariadb-connector-c-dev
 
 RUN curl -sSL https://get.haskellstack.org/ | sh
 
