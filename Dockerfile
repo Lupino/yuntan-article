@@ -12,6 +12,8 @@ RUN stack install --local-bin-path bin --system-ghc
 
 FROM alpine:3.8
 
+RUN apk update && apk add pcre gmp libffi mariadb-connector-c
+
 COPY --from=0 /data/bin/* /usr/bin/
 COPY config.sample.yaml /config.yaml
 
