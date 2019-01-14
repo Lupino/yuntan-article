@@ -1,6 +1,8 @@
-FROM alpine:3.8
+FROM ubuntu:18.04
 
-RUN apk update && apk add ghc curl libc-dev pcre-dev git mariadb-connector-c-dev
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    apt-get install -y git curl libmysqlclient-dev pkg-config libncurses5-dev libpcre3-dev
 
 RUN curl -sSL https://get.haskellstack.org/ | sh
 
@@ -10,9 +12,9 @@ COPY . /data
 
 RUN stack install --local-bin-path bin --system-ghc
 
-FROM alpine:3.8
+FROM ubuntu:18.04
 
-RUN apk update && apk add pcre gmp libffi mariadb-connector-c
+RUN apk update && apt-get install -y libmysqlclient20
 
 COPY --from=0 /data/bin/* /usr/bin/
 COPY config.sample.yaml /config.yaml
