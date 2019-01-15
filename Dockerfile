@@ -14,7 +14,7 @@ RUN stack install --local-bin-path bin --system-ghc
 
 FROM ubuntu:18.04
 
-RUN apt-get update && apt-get install -y libmysqlclient20
+RUN apt-get update && apt-get install -y libmysqlclient20 libatomic1
 
 COPY --from=0 /data/bin/* /usr/bin/
 COPY config.sample.yaml /config.yaml
