@@ -10,7 +10,7 @@ WORKDIR /data
 
 COPY . /data
 
-RUN stack install --local-bin-path bin --system-ghc
+RUN stack install --local-bin-path bin
 
 FROM ubuntu:18.04
 
