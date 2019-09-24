@@ -56,7 +56,7 @@ extra-deps:
 - git: https://github.com/jdnavarro/graphql-haskell.git
   commit: 40f9024b51900c73bc0f65444c16022bd73820be
 - git: https://github.com/Lupino/jl.git
-  commit: b37389f09bf140e0afcc4405e95c9185ce342d20
+  commit: 5434d39afe4bf18558bba3a6e5e9e6fbe63f92db
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
