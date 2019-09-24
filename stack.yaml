@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-12.26
+resolver: lts-14.6
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -41,7 +41,7 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - git: https://github.com/Lupino/yuntan-common.git
-  commit: cfc461bd81713b3d9373bc12fe6063ae13a9339f
+  commit: d33d75348877c1339b34e20abcff6ed4df567adf
   subdirs:
   - yuntan-common-scotty
   - yuntan-common-scotty-type

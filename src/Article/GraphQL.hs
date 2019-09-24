@@ -65,19 +65,19 @@ import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, pickValue,
 --    summary: String
 --  }
 
-schema :: (HasMySQL u, HasOtherEnv Cache u) => Schema (GenHaxl u)
+schema :: (HasMySQL u, HasOtherEnv Cache u) => Schema (GenHaxl u w)
 schema = file :| [article, articles, tag, timeline, articleCount, timelineCount, timelineMeta]
 
-schemaByArticle :: (HasMySQL u, HasOtherEnv Cache u) => Article -> Schema (GenHaxl u)
+schemaByArticle :: (HasMySQL u, HasOtherEnv Cache u) => Article -> Schema (GenHaxl u w)
 schemaByArticle art = fromList (article_ art)
 
-file :: HasMySQL u => Resolver (GenHaxl u)
+file :: HasMySQL u => Resolver (GenHaxl u w)
 file = objectA' "file" $ \argv ->
   case getTextValue "key" argv of
     Nothing  -> empty
     Just key -> maybe [] file_ <$> getFileWithKey (unpack key)
 
-file_ :: HasMySQL u => File -> [Resolver (GenHaxl u)]
+file_ :: HasMySQL u => File -> [Resolver (GenHaxl u w)]
 file_ File{..} =
   [ scalar    "id"         fileID
   , scalar    "key"        fileKey
@@ -87,13 +87,13 @@ file_ File{..} =
   , scalar    "created_at" fileCreatedAt
   ]
 
-article :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
+article :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 article = objectA' "article" $ \argv ->
   case getIntValue "id" argv of
     Nothing    -> empty
     Just artId -> maybe [] article_ <$> getArticleById artId
 
-article_ :: HasMySQL u => Article -> [Resolver (GenHaxl u)]
+article_ :: HasMySQL u => Article -> [Resolver (GenHaxl u w)]
 article_ Article{..} =
   [ scalar    "id"         artID
   , scalar    "title"      artTitle
@@ -108,14 +108,14 @@ article_ Article{..} =
   , scalar    "created_at" artCreatedAt
   ]
 
-articles :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
+articles :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 articles = arrayA' "articles" $ \ argv -> do
   let from = fromMaybe 0  $ getIntValue "from" argv
       size = fromMaybe 10 $ getIntValue "size" argv
 
   map article_ <$> getArticleList from size (desc "id")
 
-tag :: HasMySQL u => Resolver (GenHaxl u)
+tag :: HasMySQL u => Resolver (GenHaxl u w)
 tag = objectA' "tag" $ \argv -> do
   let tagId = getIntValue "id" argv
       name = getTextValue "name" argv
@@ -124,14 +124,14 @@ tag = objectA' "tag" $ \argv -> do
     (Just tagId', _)   -> maybe [] tag_ <$> getTagById tagId'
     (_, Just name')    -> maybe [] tag_ <$> getTagByName (unpack name')
 
-tag_ :: HasMySQL u => Tag -> [Resolver (GenHaxl u)]
+tag_ :: HasMySQL u => Tag -> [Resolver (GenHaxl u w)]
 tag_ Tag{..} =
   [ scalar "id"         tagID
   , scalar "name"       tagName
   , scalar "created_at" tagCreatedAt
   ]
 
-timeline :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
+timeline :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 timeline = arrayA' "timeline" $ \ argv -> do
   let from = fromMaybe 0  $ getIntValue "from" argv
       size = fromMaybe 10 $ getIntValue "size" argv
@@ -141,24 +141,24 @@ timeline = arrayA' "timeline" $ \ argv -> do
     Just name ->
       map article_ <$> getArticleListByTimeline (unpack name) from size (desc "art_id")
 
-articleCount :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
+articleCount :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 articleCount = scalarA "article_count" $ \ case
   [] -> countArticle
   _  -> empty
 
-timelineCount :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u)
+timelineCount :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 timelineCount = scalarA "timeline_count" $ \ argv ->
   case getTextValue "name" argv of
     Nothing   -> empty
     Just name -> countTimeline (unpack name)
 
-timelineMeta :: HasMySQL u => Resolver (GenHaxl u)
+timelineMeta :: HasMySQL u => Resolver (GenHaxl u w)
 timelineMeta = objectA' "timeline_meta" $ \argv ->
   case getTextValue "name" argv of
     Nothing   -> empty
     Just name -> maybe [] timelineMeta_ <$> getTimelineMeta (unpack name)
 
-timelineMeta_ :: (Title, Summary) -> [Resolver (GenHaxl u)]
+timelineMeta_ :: (Title, Summary) -> [Resolver (GenHaxl u w)]
 timelineMeta_ (title, summary) =
   [ scalar "title"   title
   , scalar "summary" summary

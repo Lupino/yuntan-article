@@ -14,7 +14,7 @@ import           Yuntan.Types.Scotty   (ScottyH)
 
 import           Article.Router
 
-application :: (HasMySQL u, HasOtherEnv Cache u) => [Middleware] -> ScottyH u ()
+application :: (HasMySQL u, HasOtherEnv Cache u) => [Middleware] -> ScottyH u w ()
 application mids = do
   mapM_ middleware mids
 

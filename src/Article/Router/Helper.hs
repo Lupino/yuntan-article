@@ -41,25 +41,25 @@ import           Yuntan.Types.OrderBy    (desc)
 import           Yuntan.Types.Scotty     (ActionH)
 import           Yuntan.Utils.Scotty     (errNotFound, ok, safeParam)
 
-pageParam :: ActionH u (Int64, Int64)
+pageParam :: ActionH u w (Int64, Int64)
 pageParam = do
   page <- safeParam "page" (1 :: Int64)
   from <- safeParam "from" (0 :: Int64)
   size <- safeParam "size" 10
   return (max ((page - 1) * size) from, size)
 
-timelineMeta :: HasMySQL u => String -> ActionH u (Maybe (Title, Summary))
+timelineMeta :: HasMySQL u => String -> ActionH u w (Maybe (Title, Summary))
 timelineMeta = lift . getTimelineMeta
 
-timelineTitle :: HasMySQL u => String -> ActionH u Title
+timelineTitle :: HasMySQL u => String -> ActionH u w Title
 timelineTitle name = maybe name fst <$> timelineMeta name
 
-timeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> ActionH u (ListResult Article)
+timeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> ActionH u w (ListResult Article)
 timeline name = articles' s t
   where s = flip' (getArticleListByTimeline name) $ desc "art_id"
         t = countTimeline name
 
-articles :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u (ListResult Article)
+articles :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u w (ListResult Article)
 articles = articles' s t
   where s = flip' getArticleList $ desc "id"
         t = countArticle
@@ -69,7 +69,7 @@ flip' f = g
   where g c a b = f a b c
 
 
-articles' :: HasMySQL u => (From -> Size -> GenHaxl u [Article]) -> GenHaxl u Int64 -> ActionH u (ListResult Article)
+articles' :: HasMySQL u => (From -> Size -> GenHaxl u w [Article]) -> GenHaxl u w Int64 -> ActionH u w (ListResult Article)
 articles' s t = do
   (from, size) <- pageParam
   lift $ do
@@ -82,12 +82,12 @@ articles' s t = do
                            , getTotal  = total
                            }
 
-article :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u (Maybe Article)
+article :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u w (Maybe Article)
 article = do
   aid <- param "art_id"
   lift $ getArticleById aid
 
-requireArticle :: (HasMySQL u, HasOtherEnv Cache u) => (Article -> ActionH u ()) -> ActionH u ()
+requireArticle :: (HasMySQL u, HasOtherEnv Cache u) => (Article -> ActionH u w ()) -> ActionH u w ()
 requireArticle action = do
   artId <- param "art_id"
 
@@ -96,7 +96,7 @@ requireArticle action = do
 
   where notFound artId = errNotFound $ concat [ "Article (", show artId, ") not found" ]
 
-requireTag :: HasMySQL u => (Tag -> ActionH u ()) -> ActionH u ()
+requireTag :: HasMySQL u => (Tag -> ActionH u w ()) -> ActionH u w ()
 requireTag action = do
   tid <- safeParam "tag_id" (0::ID)
   name <- safeParam "tag" (""::String)
@@ -111,48 +111,48 @@ requireTag action = do
 merge :: Monad m => ((a -> m ()) -> m ()) -> ((b -> m ()) -> m ()) -> (a -> b -> m ()) -> m ()
 merge f g t = f $ \a -> g $ \b -> t a b
 
-requireTagAndArticle :: (HasMySQL u, HasOtherEnv Cache u) => (Tag -> Article -> ActionH u ()) -> ActionH u ()
+requireTagAndArticle :: (HasMySQL u, HasOtherEnv Cache u) => (Tag -> Article -> ActionH u w ()) -> ActionH u w ()
 requireTagAndArticle = merge requireTag requireArticle
 
-resultOK :: ActionH u ()
+resultOK :: ActionH u w ()
 resultOK = ok "result" ("OK" :: Text)
 
-extraKeys :: ActionH u [Text]
+extraKeys :: ActionH u w [Text]
 extraKeys = do
   ks <- safeParam "extra_keys" (""::String)
 
   if null ks then return []
              else return . map pack $ split "," ks
 
-contentKeys :: ActionH u [Text]
+contentKeys :: ActionH u w [Text]
 contentKeys = do
   ks <- safeParam "content_keys" (""::String)
 
   if null ks then return []
              else return . map pack $ split "," ks
 
-isJsonContent :: ActionH u Bool
+isJsonContent :: ActionH u w Bool
 isJsonContent = not . null <$> safeParam "content_json" ("" :: String)
 
-preprocessArticle :: Article -> ActionH u Article
+preprocessArticle :: Article -> ActionH u w Article
 preprocessArticle = checkExtraKeys $ checkJsonContent $ checkContentKeys return
-  where checkExtraKeys :: (Article -> ActionH u Article) -> Article -> ActionH u Article
+  where checkExtraKeys :: (Article -> ActionH u w Article) -> Article -> ActionH u w Article
         checkExtraKeys next a = next =<< (flip pickExtra a <$> extraKeys)
 
-        checkJsonContent :: (Article -> ActionH u Article) -> Article -> ActionH u Article
+        checkJsonContent :: (Article -> ActionH u w Article) -> Article -> ActionH u w Article
         checkJsonContent next a = do
           isJson <- isJsonContent
           if isJson then next (setJsonContent a) else next a
 
-        checkContentKeys :: (Article -> ActionH u Article) -> Article -> ActionH u Article
+        checkContentKeys :: (Article -> ActionH u w Article) -> Article -> ActionH u w Article
         checkContentKeys next a = do
           keys <- contentKeys
           if null keys then next a else next (pickContent keys a)
 
-preprocessArticleList :: [Article] -> ActionH u [Article]
+preprocessArticleList :: [Article] -> ActionH u w [Article]
 preprocessArticleList = mapM preprocessArticle
 
-checkSed :: Value -> ActionH u Value
+checkSed :: Value -> ActionH u w Value
 checkSed j = do
   inp <- safeParam "jl" (""::String)
   if null inp then return j
