@@ -3,10 +3,9 @@
 {-# LANGUAGE RecordWildCards   #-}
 
 module Article.Config
-  (
-    MySQLConfig (..)
+  ( PSQL (..)
   , Config (..)
-  , genMySQLPool
+  , genPSQLPool
   , genRedisConnection
   , RedisConfig (..)
   , Cache
@@ -14,25 +13,24 @@ module Article.Config
   , redisEnv
   ) where
 
-import           Data.Aeson                (FromJSON, parseJSON, withObject,
-                                            (.!=), (.:), (.:?))
-import           Database.Redis            (Connection)
-import           Yuntan.Config.MySQLConfig (MySQLConfig (..), genMySQLPool)
-import           Yuntan.Config.RedisConfig (RedisConfig (..),
-                                            defaultRedisConfig,
-                                            genRedisConnection)
-import           Yuntan.Types.HasMySQL     (HasOtherEnv, otherEnv)
+import           Data.Aeson           (FromJSON, parseJSON, withObject, (.!=),
+                                       (.:), (.:?))
+import           Database.PSQL.Config (PSQL (..), genPSQLPool)
+import           Database.PSQL.Types  (HasOtherEnv, otherEnv)
+import           Database.Redis       (Connection)
+import           Haxl.RedisConfig     (RedisConfig (..), defaultRedisConfig,
+                                       genRedisConnection)
 
 data Config = Config
-  { mysqlConfig :: MySQLConfig
+  { psqlConfig  :: PSQL
   , redisConfig :: RedisConfig
   }
   deriving (Show)
 
 instance FromJSON Config where
   parseJSON = withObject "Config" $ \o -> do
-    mysqlConfig  <- o .: "mysql"
-    redisConfig  <- o .:? "redis" .!= defaultRedisConfig
+    psqlConfig  <- o .: "psql"
+    redisConfig <- o .:? "redis" .!= defaultRedisConfig
     return Config{..}
 
 newtype Cache = Cache

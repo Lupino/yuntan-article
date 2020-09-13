@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Article.DataSource.Tag
-  (
-    addTag
+  ( addTag
   , getTagById
   , getTagByName
   , getTags
@@ -13,56 +12,50 @@ module Article.DataSource.Tag
   , getAllArticleTagName
   ) where
 
+import           Article.DataSource.Table (articleTag, tags)
 import           Article.Types
-import           Control.Monad           (void)
-import           Data.Int                (Int64)
-import           Data.Maybe              (listToMaybe)
-import           Data.String             (fromString)
+import           Control.Monad.IO.Class   (liftIO)
+import           Data.Int                 (Int64)
 import           Data.UnixTime
-import           Database.MySQL.Simple   (Only (..), execute, insertID, query)
-import           Prelude                 hiding (id)
-import           Yuntan.Types.HasMySQL   (MySQL)
-import           Yuntan.Types.ListResult (From, Size)
-import           Yuntan.Types.OrderBy    (OrderBy)
+import           Database.PSQL.Types      (From, Only (..), OrderBy, PSQL, Size,
+                                           as, delete, insertOrUpdate,
+                                           insertRet, join, none, selectOne,
+                                           selectOnly, select_, update)
+import           Prelude                  hiding (id)
 
-addTag :: TagName -> MySQL ID
-addTag name prefix conn = do
-  t <- getUnixTime
-  void $ execute conn sql (name, show $ toEpochTime t)
-  fromIntegral <$> insertID conn
-  where sql = fromString $ concat [ "INSERT INTO `", prefix, "_tags` (`name`, `created_at`) values ( ?, ? )" ]
+addTag :: TagName -> PSQL ID
+addTag name = do
+  t <- liftIO getUnixTime
+  insertRet tags ["name", "created_at"] "id" (name, show $ toEpochTime t) 0
 
-getTagById :: ID -> MySQL (Maybe Tag)
-getTagById id prefix conn = listToMaybe <$> query conn sql (Only id)
-  where sql = fromString $ concat [ "SELECT * FROM `", prefix, "_tags` WHERE `id` = ?" ]
+getTagById :: ID -> PSQL (Maybe Tag)
+getTagById id = selectOne tags ["*"] "id=?" (Only id)
 
-getTagByName :: TagName -> MySQL (Maybe Tag)
-getTagByName name prefix conn = listToMaybe <$> query conn sql (Only name)
-  where sql = fromString $ concat [ "SELECT * FROM `", prefix, "_tags` WHERE `name` = ?" ]
 
-updateTag :: ID -> TagName -> MySQL Int64
-updateTag id name prefix conn = execute conn sql (name, id)
-  where sql = fromString $ concat [ "UPDATE `", prefix, "_tags` SET `name`=? WHERE `id`=?" ]
+getTagByName :: TagName -> PSQL (Maybe Tag)
+getTagByName name = selectOne tags ["*"] "name=?" (Only name)
 
-getTags :: From -> Size -> OrderBy -> MySQL [Tag]
-getTags from size o prefix conn = query conn sql (from, size)
-  where sql = fromString $ concat [ "SELECT * FROM `", prefix, "_tags` ", show o, " LIMIT ?,?" ]
+updateTag :: ID -> TagName -> PSQL Int64
+updateTag id name = update tags ["name"] "id=?" (name, id)
 
-getAllArticleTagName :: ID -> MySQL [TagName]
-getAllArticleTagName aid prefix conn = map fromOnly <$> query conn sql (Only aid)
-  where sql = fromString $ concat [ "SELECT t.`name` FROM `", prefix, "_tags` AS t, `", prefix, "_article_tag` AS at WHERE at.`art_id`=? AND at.`tag_id` = t.`id`" ]
+getTags :: From -> Size -> OrderBy -> PSQL [Tag]
+getTags = select_ tags ["*"]
 
-addArticleTag :: ID -> ID -> MySQL ID
-addArticleTag aid tid prefix conn = do
-  t <- getUnixTime
-  void $ execute conn sql (aid, tid, show $ toEpochTime t)
-  fromIntegral <$> insertID conn
-  where sql = fromString $ concat [ "REPLACE INTO `", prefix, "_article_tag` (`art_id`, `tag_id`, `created_at`) values ( ?, ?, ? )" ]
+getAllArticleTagName :: ID -> PSQL [TagName]
+getAllArticleTagName aid =
+  selectOnly table "t.name" partSql (Only aid) 0 100 none
+  where table = tags `as` "t" `join` articleTag `as` "at"
+        partSql = "at.art_id = ? AND at.tag_id = t.id"
 
-removeArticleTag :: ID -> ID -> MySQL Int64
-removeArticleTag aid tid prefix conn = execute conn sql (aid, tid)
-  where sql = fromString $ concat [ "DELETE FROM `", prefix, "_article_tag` WHERE `art_id` = ? AND `tag_id`=?" ]
+addArticleTag :: ID -> ID -> PSQL Int64
+addArticleTag aid tid = do
+  t <- liftIO getUnixTime
+  insertOrUpdate articleTag ["art_id", "tag_id"] [] ["created_at"] (aid, tid, show $ toEpochTime t)
 
-removeAllArticleTag :: ID -> MySQL Int64
-removeAllArticleTag aid prefix conn = execute conn sql (Only aid)
-  where sql = fromString $ concat [ "DELETE FROM `", prefix, "_article_tag` WHERE `art_id` = ?" ]
+removeArticleTag :: ID -> ID -> PSQL Int64
+removeArticleTag aid tid =
+  delete articleTag "art_id = ? AND tag_id = ?" (aid, tid)
+
+removeAllArticleTag :: ID -> PSQL Int64
+removeAllArticleTag aid =
+  delete articleTag "art_id = ? " (Only aid)

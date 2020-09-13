@@ -1,16 +1,12 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Article.Utils
-  (
-    firstImage
+  ( firstImage
   , cleanHtml
-
-  , onlyToMaybe
   ) where
 
 
-import           Database.MySQL.Simple (Only (..))
-import           Text.HTML.TagSoup     as Soup
+import           Text.HTML.TagSoup as Soup
 
 firstImage :: String -> String
 firstImage str = go $ parseTags str
@@ -20,7 +16,3 @@ firstImage str = go $ parseTags str
 
 cleanHtml :: String -> String
 cleanHtml str = innerText $ parseTags str
-
-onlyToMaybe :: Maybe (Only a) -> Maybe a
-onlyToMaybe (Just x) = Just $ fromOnly x
-onlyToMaybe Nothing  = Nothing

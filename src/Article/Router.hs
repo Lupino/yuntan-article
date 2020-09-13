@@ -1,6 +1,5 @@
 module Article.Router
-  (
-    module X
+  ( module X
   ) where
 
 import           Article.Router.Handler as X

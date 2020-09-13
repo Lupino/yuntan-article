@@ -5,16 +5,14 @@ module Article.Application
     application
   ) where
 
-import           Web.Scotty.Trans      (delete, get, middleware, post)
-
-import           Article.Config        (Cache)
-import           Network.Wai           (Middleware)
-import           Yuntan.Types.HasMySQL (HasMySQL, HasOtherEnv)
-import           Yuntan.Types.Scotty   (ScottyH)
-
+import           Article.Config      (Cache)
 import           Article.Router
+import           Database.PSQL.Types (HasOtherEnv, HasPSQL)
+import           Network.Wai         (Middleware)
+import           Web.Scotty.Haxl     (ScottyH)
+import           Web.Scotty.Trans    (delete, get, middleware, post)
 
-application :: (HasMySQL u, HasOtherEnv Cache u) => [Middleware] -> ScottyH u w ()
+application :: (HasPSQL u, HasOtherEnv Cache u) => [Middleware] -> ScottyH u w ()
 application mids = do
   mapM_ middleware mids
 
@@ -38,16 +36,14 @@ application mids = do
 
   get    "/api/timeline/:timeline/"          getAllTimelineHandler
   post   "/api/timeline/:timeline/"          $ requireArticle createTimelineHandler
-  post   "/api/timeline/:timeline/:art_id/"  $ requireArticle createTimelineHandler
   get    "/api/timeline/:timeline/meta"      getTimelineMetaHandler
   post   "/api/timeline/:timeline/meta"      saveTimelineMetaHandler
   delete "/api/timeline/:timeline/meta"      removeTimelineMetaHandler
   delete "/api/timeline/:timeline/:art_id/"  $ requireArticle removeTimelineHandler
+  post   "/api/timeline/:timeline/:art_id/"  $ requireArticle createTimelineHandler
 
   post   "/api/articles/:art_id/tags/"       $ requireTagAndArticle addArticleTagHandler
   delete "/api/articles/:art_id/tags/"       $ requireTagAndArticle removeArticleTagHandler
-
-  get    "/api/check/"                       existsArticleHandler
 
   get    "/api/file/:key"                    getFileHandler
   post   "/api/file/:key"                    saveFileHandler

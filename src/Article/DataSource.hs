@@ -11,37 +11,33 @@ module Article.DataSource (
   , initArticleState
   ) where
 
-import           Data.Hashable               (Hashable (..))
-import           Data.Typeable               (Typeable)
-import           Haxl.Core                   (BlockedFetch (..), DataSource,
-                                              DataSourceName, Flags,
-                                              PerformFetch (..), ShowP, State,
-                                              StateKey, dataSourceName, fetch,
-                                              putFailure, putSuccess, showp)
-
 import           Article.DataSource.Article
 import           Article.DataSource.File
 import           Article.DataSource.Table
 import           Article.DataSource.Tag
 import           Article.DataSource.Timeline
 import           Article.Types
-import           Yuntan.Types.HasMySQL       (HasMySQL, mysqlPool, tablePrefix)
-import           Yuntan.Types.ListResult     (From, Size)
-import           Yuntan.Types.OrderBy        (OrderBy)
-
-import qualified Control.Exception           (SomeException, bracket_, try)
-import           Data.Aeson                  (Value (..))
-import           Data.Int                    (Int64)
-import           Data.Pool                   (withResource)
-import           Database.MySQL.Simple       (Connection)
-
 import           Control.Concurrent.Async
 import           Control.Concurrent.QSem
+import qualified Control.Exception           (SomeException, bracket_, try)
+import           Data.Aeson                  (Value (..))
+import           Data.Hashable               (Hashable (..))
+import           Data.Int                    (Int64)
+import           Data.Pool                   (withResource)
+import           Data.Typeable               (Typeable)
+import           Database.PSQL.Types         (Connection, From, HasPSQL,
+                                              OrderBy, PSQL, Size, TablePrefix,
+                                              psqlPool, runPSQL, tablePrefix)
+import           Haxl.Core                   (BlockedFetch (..), DataSource,
+                                              DataSourceName, Flags,
+                                              PerformFetch (..), ShowP, State,
+                                              StateKey, dataSourceName, fetch,
+                                              putFailure, putSuccess, showp)
 
 -- Data source implementation.
 
 data ArticleReq a where
-  CreateArticle        :: Title -> Summary -> Content -> FromURL -> CreatedAt -> ArticleReq ID
+  CreateArticle        :: Title -> Summary -> Content -> CreatedAt -> ArticleReq ID
   GetArticleById       :: ID -> ArticleReq (Maybe Article)
   UpdateArticle        :: ID -> Title -> Summary -> Content -> ArticleReq Int64
   UpdateArticleTitle   :: ID -> Title -> ArticleReq Int64
@@ -57,8 +53,6 @@ data ArticleReq a where
   SaveFileWithExtra    :: FileBucket -> FileKey -> FileExtra -> ArticleReq (Maybe File)
   GetFileWithKey       :: FileKey -> ArticleReq (Maybe File)
   GetFileById          :: ID -> ArticleReq (Maybe File)
-
-  ExistsArticle        :: FromURL -> ArticleReq (Maybe Int64)
 
   AddTag               :: TagName -> ArticleReq ID
   GetTagById           :: ID -> ArticleReq (Maybe Tag)
@@ -87,7 +81,7 @@ data ArticleReq a where
 
 deriving instance Eq (ArticleReq a)
 instance Hashable (ArticleReq a) where
-  hashWithSalt s (CreateArticle a b c d e)    = hashWithSalt s (0::Int, a, b, c, d, e)
+  hashWithSalt s (CreateArticle a b c e)      = hashWithSalt s (0::Int, a, b, c, e)
   hashWithSalt s (GetArticleById a)           = hashWithSalt s (1::Int, a)
   hashWithSalt s (UpdateArticle a b c d)      = hashWithSalt s (2::Int, a, b, c, d)
   hashWithSalt s (UpdateArticleTitle a b)     = hashWithSalt s (3::Int, a, b)
@@ -103,7 +97,6 @@ instance Hashable (ArticleReq a) where
   hashWithSalt s (SaveFileWithExtra a b c)    = hashWithSalt s (12::Int, a, b, c)
   hashWithSalt s (GetFileWithKey a)           = hashWithSalt s (13::Int, a)
   hashWithSalt s (GetFileById a)              = hashWithSalt s (14::Int, a)
-  hashWithSalt s (ExistsArticle a)            = hashWithSalt s (16::Int, a)
 
   hashWithSalt s (AddTag a)                   = hashWithSalt s (17::Int, a)
   hashWithSalt s (GetTagById a)               = hashWithSalt s (18::Int, a)
@@ -138,11 +131,11 @@ instance StateKey ArticleReq where
 instance DataSourceName ArticleReq where
   dataSourceName _ = "ArticleDataSource"
 
-instance HasMySQL u => DataSource u ArticleReq where
+instance HasPSQL u => DataSource u ArticleReq where
   fetch = doFetch
 
 doFetch
-  :: HasMySQL u
+  :: HasPSQL u
   => State ArticleReq
   -> Flags
   -> u
@@ -154,22 +147,22 @@ doFetch _state _flags _user = AsyncFetch $ \reqs inner -> do
     inner
     mapM_ wait asyncs
 
-fetchAsync :: HasMySQL u => QSem -> u -> BlockedFetch ArticleReq -> IO (Async ())
+fetchAsync :: HasPSQL u => QSem -> u -> BlockedFetch ArticleReq -> IO (Async ())
 fetchAsync sem env req = async $
   Control.Exception.bracket_ (waitQSem sem) (signalQSem sem) $ withResource pool $ fetchSync req prefix
 
-  where pool = mysqlPool env
+  where pool   = psqlPool env
         prefix = tablePrefix env
 
 fetchSync :: BlockedFetch ArticleReq -> TablePrefix -> Connection -> IO ()
 fetchSync (BlockedFetch req rvar) prefix conn = do
-  e <- Control.Exception.try $ fetchReq req prefix conn
+  e <- Control.Exception.try $ runPSQL prefix conn (fetchReq req)
   case e of
     Left ex -> putFailure rvar (ex :: Control.Exception.SomeException)
     Right a -> putSuccess rvar a
 
-fetchReq :: ArticleReq a -> TablePrefix -> Connection -> IO a
-fetchReq (CreateArticle t s co f c)        = createArticle t s co f c
+fetchReq :: ArticleReq a -> PSQL a
+fetchReq (CreateArticle t s co c)          = createArticle t s co c
 
 fetchReq (GetArticleById artId)            = getArticle artId
 
@@ -188,8 +181,6 @@ fetchReq (SaveFile path fc)                = saveFile path fc
 fetchReq (SaveFileWithExtra path fc extra) = saveFileWithExtra path fc extra
 fetchReq (GetFileWithKey key)              = getFileWithKey key
 fetchReq (GetFileById fileId)              = getFile fileId
-
-fetchReq (ExistsArticle u)                 = existsArticle u
 
 fetchReq (AddTag name)                     = addTag name
 fetchReq (GetTagById tid)                  = getTagById tid

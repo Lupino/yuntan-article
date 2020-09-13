@@ -6,26 +6,22 @@ module Main where
 
 import           Article                              (mergeData)
 import           Article.Application
+import qualified Article.Config                       as C
 import           Article.DataSource                   (initArticleState)
 import           Data.Default.Class                   (def)
 import           Data.Streaming.Network.Internal      (HostPreference (Host))
 import           Data.String                          (fromString)
+import qualified Data.Yaml                            as Y
+import           Database.PSQL.Types                  (HasOtherEnv, HasPSQL,
+                                                       simpleEnv)
 import           Haxl.Core                            (GenHaxl, StateStore,
                                                        initEnv, runHaxl,
                                                        stateEmpty, stateSet)
+import           Haxl.RedisCache                      (initRedisState)
 import           Network.Wai.Handler.Warp             (setHost, setPort)
-import           Web.Scotty.Trans                     (scottyOptsT, settings)
-import           Yuntan.Types.HasMySQL                (HasMySQL, HasOtherEnv,
-                                                       simpleEnv)
-import           Yuntan.Utils.RedisCache              (initRedisState)
-
 import           Network.Wai.Middleware.RequestLogger (logStdout)
-
-import qualified Article.Config                       as C
-import qualified Data.Yaml                            as Y
-
-import           Data.Semigroup                       ((<>))
 import           Options.Applicative
+import           Web.Scotty.Trans                     (scottyOptsT, settings)
 
 data Options = Options { getConfigFile  :: String
                        , getHost        :: String
@@ -71,18 +67,18 @@ program Options { getConfigFile  = confFile
 
   (Right conf) <- Y.decodeFileEither confFile
 
-  let mysqlConfig  = C.mysqlConfig conf
-      mysqlThreads = C.mysqlHaxlNumThreads mysqlConfig
+  let psqlConfig   = C.psqlConfig conf
+      psqlThreads  = C.psqlHaxlNumThreads psqlConfig
       redisConfig  = C.redisConfig conf
       redisThreads = C.redisHaxlNumThreads redisConfig
 
-  pool <- C.genMySQLPool mysqlConfig
+  pool <- C.genPSQLPool psqlConfig
   redis <- C.genRedisConnection redisConfig
 
   let state = stateSet (initRedisState redisThreads $ fromString prefix)
-            $ stateSet (initArticleState mysqlThreads) stateEmpty
+            $ stateSet (initArticleState psqlThreads) stateEmpty
 
-  let u = simpleEnv pool prefix $ C.mkCache redis
+  let u = simpleEnv pool (fromString prefix) $ C.mkCache redis
 
   let opts = def { settings = setPort port
                             $ setHost (Host host) (settings def) }
@@ -90,7 +86,7 @@ program Options { getConfigFile  = confFile
   runIO u state mergeData
 
   scottyOptsT opts (runIO u state) $ application [logStdout]
-  where runIO :: (HasMySQL u, HasOtherEnv C.Cache u) => u -> StateStore -> GenHaxl u w b -> IO b
+  where runIO :: (HasPSQL u, HasOtherEnv C.Cache u) => u -> StateStore -> GenHaxl u w b -> IO b
         runIO env s m = do
           env0 <- initEnv s env
           runHaxl env0 m

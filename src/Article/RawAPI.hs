@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Article.RawAPI
-  (
-    getArticleById
+  ( getArticleById
   , createArticle
   , updateArticle
   , updateArticleTitle
@@ -12,7 +11,6 @@ module Article.RawAPI
   , getArticleIdList
   , countArticle
   , removeArticle
-  , existsArticle
 
   , saveFile
   , saveFileWithExtra
@@ -42,124 +40,118 @@ module Article.RawAPI
   , mergeData
   ) where
 
+import           Article.DataSource  (ArticleReq (..))
 import           Article.Types
-
-import           Article.DataSource      (ArticleReq (..))
-import           Data.Aeson              (Value)
-import           Data.Int                (Int64)
-import           Haxl.Core               (GenHaxl, dataFetch, uncachedRequest)
-import           Yuntan.Types.HasMySQL   (HasMySQL)
-import           Yuntan.Types.ListResult (From, Size)
-import           Yuntan.Types.OrderBy    (OrderBy)
+import           Data.Aeson          (Value)
+import           Data.Int            (Int64)
+import           Database.PSQL.Types (From, HasPSQL, OrderBy, Size)
+import           Haxl.Core           (GenHaxl, dataFetch, uncachedRequest)
 
 
-getArticleById :: HasMySQL u => ID -> GenHaxl u w (Maybe Article)
+getArticleById :: HasPSQL u => ID -> GenHaxl u w (Maybe Article)
 getArticleById artId = dataFetch (GetArticleById artId)
 
 
-createArticle :: HasMySQL u => Title -> Summary -> Content -> FromURL -> CreatedAt -> GenHaxl u w ID
-createArticle t s co f c = uncachedRequest (CreateArticle t s co f c)
+createArticle :: HasPSQL u => Title -> Summary -> Content -> CreatedAt -> GenHaxl u w ID
+createArticle t s co c = uncachedRequest (CreateArticle t s co c)
 
-updateArticle :: HasMySQL u => ID -> Title -> Summary -> Content -> GenHaxl u w Int64
+updateArticle :: HasPSQL u => ID -> Title -> Summary -> Content -> GenHaxl u w Int64
 updateArticle artId t s c = uncachedRequest (UpdateArticle artId t s c)
 
-updateArticleTitle :: HasMySQL u => ID -> Title -> GenHaxl u w Int64
+updateArticleTitle :: HasPSQL u => ID -> Title -> GenHaxl u w Int64
 updateArticleTitle artId t = uncachedRequest (UpdateArticleTitle artId t)
 
-updateArticleSummary :: HasMySQL u => ID -> Summary -> GenHaxl u w Int64
+updateArticleSummary :: HasPSQL u => ID -> Summary -> GenHaxl u w Int64
 updateArticleSummary artId s = uncachedRequest (UpdateArticleSummary artId s)
 
-updateArticleContent :: HasMySQL u => ID -> Content -> GenHaxl u w Int64
+updateArticleContent :: HasPSQL u => ID -> Content -> GenHaxl u w Int64
 updateArticleContent artId c = uncachedRequest (UpdateArticleContent artId c)
 
-updateArticleCover :: HasMySQL u => ID -> Maybe File -> GenHaxl u w Int64
+updateArticleCover :: HasPSQL u => ID -> Maybe File -> GenHaxl u w Int64
 updateArticleCover artId cover = uncachedRequest (UpdateArticleCover artId cover)
 
-updateArticleExtra :: HasMySQL u => ID -> Value -> GenHaxl u w Int64
+updateArticleExtra :: HasPSQL u => ID -> Value -> GenHaxl u w Int64
 updateArticleExtra artId extra = uncachedRequest (UpdateArticleExtra artId extra)
 
-getArticleIdList :: (HasMySQL u) => From -> Size -> OrderBy -> GenHaxl u w [ID]
+getArticleIdList :: (HasPSQL u) => From -> Size -> OrderBy -> GenHaxl u w [ID]
 getArticleIdList f s o = dataFetch (GetArticleIdList f s o)
 
-countArticle :: HasMySQL u => GenHaxl u w Int64
+countArticle :: HasPSQL u => GenHaxl u w Int64
 countArticle = dataFetch CountArticle
 
-removeArticle :: HasMySQL u => ID -> GenHaxl u w Int64
+removeArticle :: HasPSQL u => ID -> GenHaxl u w Int64
 removeArticle artId = uncachedRequest (RemoveArticle artId)
 
-existsArticle :: HasMySQL u => FromURL -> GenHaxl u w (Maybe ID)
-existsArticle u = dataFetch (ExistsArticle u)
-
-saveFile :: HasMySQL u => FileBucket -> FileKey -> GenHaxl u w (Maybe File)
+saveFile :: HasPSQL u => FileBucket -> FileKey -> GenHaxl u w (Maybe File)
 saveFile path fc = uncachedRequest (SaveFile path fc)
 
 
-saveFileWithExtra :: HasMySQL u => FileBucket -> FileKey -> FileExtra -> GenHaxl u w (Maybe File)
+saveFileWithExtra :: HasPSQL u => FileBucket -> FileKey -> FileExtra -> GenHaxl u w (Maybe File)
 saveFileWithExtra path fc extra = uncachedRequest (SaveFileWithExtra path fc extra)
 
-getFileWithKey :: HasMySQL u => FileKey -> GenHaxl u w (Maybe File)
+getFileWithKey :: HasPSQL u => FileKey -> GenHaxl u w (Maybe File)
 getFileWithKey k = dataFetch (GetFileWithKey k)
 
-getFileById :: HasMySQL u => ID -> GenHaxl u w (Maybe File)
+getFileById :: HasPSQL u => ID -> GenHaxl u w (Maybe File)
 getFileById fileId = dataFetch (GetFileById fileId)
 
-addTag :: HasMySQL u => TagName -> GenHaxl u w ID
+addTag :: HasPSQL u => TagName -> GenHaxl u w ID
 addTag name = uncachedRequest (AddTag name)
 
-getTagById :: HasMySQL u => ID -> GenHaxl u w (Maybe Tag)
+getTagById :: HasPSQL u => ID -> GenHaxl u w (Maybe Tag)
 getTagById tid = dataFetch (GetTagById tid)
 
-getTagByName :: HasMySQL u => TagName -> GenHaxl u w (Maybe Tag)
+getTagByName :: HasPSQL u => TagName -> GenHaxl u w (Maybe Tag)
 getTagByName name = dataFetch (GetTagByName name)
 
-getTags :: HasMySQL u => From -> Size -> OrderBy -> GenHaxl u w [Tag]
+getTags :: HasPSQL u => From -> Size -> OrderBy -> GenHaxl u w [Tag]
 getTags from size o = dataFetch (GetTags from size o)
 
-updateTag :: HasMySQL u => ID -> TagName -> GenHaxl u w Int64
+updateTag :: HasPSQL u => ID -> TagName -> GenHaxl u w Int64
 updateTag tid name = uncachedRequest (UpdateTag tid name)
 
-addArticleTag :: HasMySQL u => ID -> ID -> GenHaxl u w ID
+addArticleTag :: HasPSQL u => ID -> ID -> GenHaxl u w ID
 addArticleTag aid tid = uncachedRequest (AddArticleTag aid tid)
 
-removeArticleTag :: HasMySQL u => ID -> ID -> GenHaxl u w Int64
+removeArticleTag :: HasPSQL u => ID -> ID -> GenHaxl u w Int64
 removeArticleTag aid tid = uncachedRequest (RemoveArticleTag aid tid)
 
-removeAllArticleTag :: HasMySQL u => ID -> GenHaxl u w Int64
+removeAllArticleTag :: HasPSQL u => ID -> GenHaxl u w Int64
 removeAllArticleTag aid = uncachedRequest (RemoveAllArticleTag aid)
 
-getAllArticleTagName :: HasMySQL u => ID -> GenHaxl u w [TagName]
+getAllArticleTagName :: HasPSQL u => ID -> GenHaxl u w [TagName]
 getAllArticleTagName aid = dataFetch (GetAllArticleTagName aid)
 
-addTimeline :: HasMySQL u => String -> ID -> GenHaxl u w ID
+addTimeline :: HasPSQL u => String -> ID -> GenHaxl u w ID
 addTimeline name aid = uncachedRequest (AddTimeline name aid)
 
-removeTimeline :: HasMySQL u => String -> ID -> GenHaxl u w Int64
+removeTimeline :: HasPSQL u => String -> ID -> GenHaxl u w Int64
 removeTimeline name aid = uncachedRequest (RemoveTimeline name aid)
 
-removeTimelineList :: HasMySQL u => String -> GenHaxl u w Int64
+removeTimelineList :: HasPSQL u => String -> GenHaxl u w Int64
 removeTimelineList name = uncachedRequest (RemoveTimelineList name)
 
-removeTimelineListById :: HasMySQL u => ID -> GenHaxl u w Int64
+removeTimelineListById :: HasPSQL u => ID -> GenHaxl u w Int64
 removeTimelineListById aid = uncachedRequest (RemoveTimelineListById aid)
 
 getIdListByTimeline
-  :: HasMySQL u => String -> From -> Size -> OrderBy -> GenHaxl u w [ID]
+  :: HasPSQL u => String -> From -> Size -> OrderBy -> GenHaxl u w [ID]
 getIdListByTimeline name f s o = dataFetch (GetIdListByTimeline name f s o)
 
-countTimeline :: HasMySQL u => String -> GenHaxl u w Int64
+countTimeline :: HasPSQL u => String -> GenHaxl u w Int64
 countTimeline name = dataFetch (CountTimeline name)
 
-getTimelineListById :: HasMySQL u => ID -> GenHaxl u w [String]
+getTimelineListById :: HasPSQL u => ID -> GenHaxl u w [String]
 getTimelineListById aid = dataFetch (GetTimelineListById aid)
 
-saveTimelineMeta :: HasMySQL u => String -> Title -> Summary -> GenHaxl u w Int64
+saveTimelineMeta :: HasPSQL u => String -> Title -> Summary -> GenHaxl u w Int64
 saveTimelineMeta name t s = uncachedRequest (SaveTimelineMeta name t s)
 
-removeTimelineMeta :: HasMySQL u => String -> GenHaxl u w Int64
+removeTimelineMeta :: HasPSQL u => String -> GenHaxl u w Int64
 removeTimelineMeta name = uncachedRequest (RemoveTimelineMeta name)
 
-getTimelineMeta :: HasMySQL u => String -> GenHaxl u w (Maybe (Title, Summary))
+getTimelineMeta :: HasPSQL u => String -> GenHaxl u w (Maybe (Title, Summary))
 getTimelineMeta name = dataFetch (GetTimelineMeta name)
 
-mergeData :: HasMySQL u => GenHaxl u w ()
+mergeData :: HasPSQL u => GenHaxl u w ()
 mergeData = uncachedRequest MergeData

@@ -1,8 +1,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Article.Router.Helper
-  (
-    pageParam
+  ( pageParam
   , timeline
   , timelineTitle
   , timelineMeta
@@ -19,47 +18,46 @@ module Article.Router.Helper
   ) where
 
 import           Article
-import           Article.Config          (Cache)
-import           Control.Monad.IO.Class  (liftIO)
-import           Control.Monad.Reader    (lift)
-import           Data.Aeson              (Value)
-import           Data.Int                (Int64)
-import qualified Data.Map.Strict         as M (toList)
-import           Data.String.Utils       (split)
-import           Data.Text               (Text, pack)
-import           Haxl.Core               (GenHaxl)
-import           JL.Functions            (scope)
-import           JL.Interpreter          (desugar, eval, subst)
-import           JL.Parser               (parseText)
-import           JL.Serializer           (coreToValue, valueToExpression)
-import           JL.Types                (Expression (..))
-import           Web.Scotty.Trans        (param)
-import           Yuntan.Types.HasMySQL   (HasMySQL, HasOtherEnv)
-import           Yuntan.Types.ListResult (From, ListResult (..), Size,
-                                          emptyListResult)
-import           Yuntan.Types.OrderBy    (desc)
-import           Yuntan.Types.Scotty     (ActionH)
-import           Yuntan.Utils.Scotty     (errNotFound, ok, safeParam)
+import           Article.Config         (Cache)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader   (lift)
+import           Data.Aeson             (Value)
+import           Data.Aeson.Result      (List (..), emptyList)
+import           Data.Int               (Int64)
+import qualified Data.Map.Strict        as M (toList)
+import           Data.String.Utils      (split)
+import           Data.Text              (Text, pack)
+import           Database.PSQL.Types    (From (..), HasOtherEnv, HasPSQL,
+                                         Size (..), desc)
+import           Haxl.Core              (GenHaxl)
+import           JL.Functions           (scope)
+import           JL.Interpreter         (desugar, eval, subst)
+import           JL.Parser              (parseText)
+import           JL.Serializer          (coreToValue, valueToExpression)
+import           JL.Types               (Expression (..))
+import           Web.Scotty.Haxl        (ActionH)
+import           Web.Scotty.Trans       (param)
+import           Web.Scotty.Utils       (errNotFound, ok, safeParam)
 
-pageParam :: ActionH u w (Int64, Int64)
+pageParam :: ActionH u w (From, Size)
 pageParam = do
   page <- safeParam "page" (1 :: Int64)
   from <- safeParam "from" (0 :: Int64)
   size <- safeParam "size" 10
-  return (max ((page - 1) * size) from, size)
+  return (From $ max ((page - 1) * size) from, Size size)
 
-timelineMeta :: HasMySQL u => String -> ActionH u w (Maybe (Title, Summary))
+timelineMeta :: HasPSQL u => String -> ActionH u w (Maybe (Title, Summary))
 timelineMeta = lift . getTimelineMeta
 
-timelineTitle :: HasMySQL u => String -> ActionH u w Title
+timelineTitle :: HasPSQL u => String -> ActionH u w Title
 timelineTitle name = maybe name fst <$> timelineMeta name
 
-timeline :: (HasMySQL u, HasOtherEnv Cache u) => String -> ActionH u w (ListResult Article)
+timeline :: (HasPSQL u, HasOtherEnv Cache u) => String -> ActionH u w (List Article)
 timeline name = articles' s t
   where s = flip' (getArticleListByTimeline name) $ desc "art_id"
         t = countTimeline name
 
-articles :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u w (ListResult Article)
+articles :: (HasPSQL u, HasOtherEnv Cache u) => ActionH u w (List Article)
 articles = articles' s t
   where s = flip' getArticleList $ desc "id"
         t = countArticle
@@ -69,25 +67,26 @@ flip' f = g
   where g c a b = f a b c
 
 
-articles' :: HasMySQL u => (From -> Size -> GenHaxl u w [Article]) -> GenHaxl u w Int64 -> ActionH u w (ListResult Article)
+articles' :: HasPSQL u => (From -> Size -> GenHaxl u w [Article]) -> GenHaxl u w Int64 -> ActionH u w (List Article)
 articles' s t = do
   (from, size) <- pageParam
   lift $ do
     arts <- s from size
     total <- t
 
-    return emptyListResult { getResult = arts
-                           , getFrom   = from
-                           , getSize   = size
-                           , getTotal  = total
-                           }
+    return emptyList
+      { getResult = arts
+      , getFrom   = unFrom from
+      , getSize   = unSize size
+      , getTotal  = total
+      }
 
-article :: (HasMySQL u, HasOtherEnv Cache u) => ActionH u w (Maybe Article)
+article :: (HasPSQL u, HasOtherEnv Cache u) => ActionH u w (Maybe Article)
 article = do
   aid <- param "art_id"
   lift $ getArticleById aid
 
-requireArticle :: (HasMySQL u, HasOtherEnv Cache u) => (Article -> ActionH u w ()) -> ActionH u w ()
+requireArticle :: (HasPSQL u, HasOtherEnv Cache u) => (Article -> ActionH u w ()) -> ActionH u w ()
 requireArticle action = do
   artId <- param "art_id"
 
@@ -96,7 +95,7 @@ requireArticle action = do
 
   where notFound artId = errNotFound $ concat [ "Article (", show artId, ") not found" ]
 
-requireTag :: HasMySQL u => (Tag -> ActionH u w ()) -> ActionH u w ()
+requireTag :: HasPSQL u => (Tag -> ActionH u w ()) -> ActionH u w ()
 requireTag action = do
   tid <- safeParam "tag_id" (0::ID)
   name <- safeParam "tag" (""::String)
@@ -111,7 +110,7 @@ requireTag action = do
 merge :: Monad m => ((a -> m ()) -> m ()) -> ((b -> m ()) -> m ()) -> (a -> b -> m ()) -> m ()
 merge f g t = f $ \a -> g $ \b -> t a b
 
-requireTagAndArticle :: (HasMySQL u, HasOtherEnv Cache u) => (Tag -> Article -> ActionH u w ()) -> ActionH u w ()
+requireTagAndArticle :: (HasPSQL u, HasOtherEnv Cache u) => (Tag -> Article -> ActionH u w ()) -> ActionH u w ()
 requireTagAndArticle = merge requireTag requireArticle
 
 resultOK :: ActionH u w ()

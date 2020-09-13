@@ -1,6 +1,5 @@
 module Article
-  (
-    module Article.Types
+  ( module Article.Types
   , module Article.API
 
   , initArticleState

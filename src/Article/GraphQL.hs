@@ -9,19 +9,25 @@ module Article.GraphQL
   ) where
 
 import           Article.API
-import           Article.Config        (Cache)
+import           Article.Config      (Cache)
 import           Article.Types
-import           Control.Applicative   (Alternative (..))
-import           Data.GraphQL.Schema   (Resolver, Schema, arrayA', object,
-                                        objectA', scalar, scalarA)
-import           Data.List.NonEmpty    (NonEmpty ((:|)), fromList)
-import           Data.Maybe            (fromMaybe)
-import           Data.Text             (unpack)
-import           Haxl.Core             (GenHaxl)
-import           Yuntan.Types.HasMySQL (HasMySQL, HasOtherEnv)
-import           Yuntan.Types.OrderBy  (desc)
-import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, pickValue,
-                                        value)
+import           Control.Applicative (Alternative (..))
+import           Data.Aeson          (Value (Null))
+import           Data.Aeson.Helper   (union)
+import           Data.GraphQL.Schema (Resolver, Schema, arrayA', object,
+                                      objectA', scalar, scalarA)
+import           Data.GraphQL.Utils  (getInt, getText, pick, value)
+import           Data.List.NonEmpty  (NonEmpty ((:|)), fromList)
+import           Data.Maybe          (fromMaybe)
+import           Data.Text           (Text, unpack)
+import           Database.PSQL.Types (HasOtherEnv, HasPSQL, desc)
+import           Haxl.Core           (GenHaxl, memo, throw)
+import           Haxl.Prelude        (NotFound (..), catchAny)
+
+
+instance Alternative (GenHaxl u w) where
+  a <|> b = catchAny a b
+  empty = throw $ NotFound "mzero"
 
 --  type Query {
 --    file(key: String!): File
@@ -65,96 +71,107 @@ import           Yuntan.Utils.GraphQL  (getIntValue, getTextValue, pickValue,
 --    summary: String
 --  }
 
-schema :: (HasMySQL u, HasOtherEnv Cache u) => Schema (GenHaxl u w)
+getCache :: Text -> GenHaxl u w Value
+getCache key = memo key (return Null)
+
+schema :: (HasPSQL u, HasOtherEnv Cache u) => Schema (GenHaxl u w)
 schema = file :| [article, articles, tag, timeline, articleCount, timelineCount, timelineMeta]
 
-schemaByArticle :: (HasMySQL u, HasOtherEnv Cache u) => Article -> Schema (GenHaxl u w)
-schemaByArticle art = fromList (article_ art)
+schemaByArticle :: (HasPSQL u, HasOtherEnv Cache u) => Value -> Value -> Article -> Schema (GenHaxl u w)
+schemaByArticle aev fev art = fromList (article_ aev fev art)
 
-file :: HasMySQL u => Resolver (GenHaxl u w)
-file = objectA' "file" $ \argv ->
-  case getTextValue "key" argv of
+file :: HasPSQL u => Resolver (GenHaxl u w)
+file = objectA' "file" $ \argv -> do
+  ev <- getCache "file_extra"
+  case getText "key" argv of
     Nothing  -> empty
-    Just key -> maybe [] file_ <$> getFileWithKey (unpack key)
+    Just key -> maybe [] (file_ ev) <$> getFileWithKey (unpack key)
 
-file_ :: HasMySQL u => File -> [Resolver (GenHaxl u w)]
-file_ File{..} =
-  [ scalar    "id"         fileID
-  , scalar    "key"        fileKey
-  , scalar    "bucket"     fileBucket
-  , value     "extra"      fileExtra
-  , pickValue "pick_extra" fileExtra
-  , scalar    "created_at" fileCreatedAt
+file_ :: HasPSQL u => Value -> File -> [Resolver (GenHaxl u w)]
+file_ ev File{..} =
+  [ scalar "id"         fileID
+  , scalar "key"        fileKey
+  , scalar "bucket"     fileBucket
+  , value  "extra"      $ union fileExtra ev
+  , pick   "pick_extra" fileExtra
+  , scalar "created_at" fileCreatedAt
   ]
 
-article :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
-article = objectA' "article" $ \argv ->
-  case getIntValue "id" argv of
+article :: (HasPSQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
+article = objectA' "article" $ \argv -> do
+  fev <- getCache "file_extra"
+  aev <- getCache "article_extra"
+  case getInt "id" argv of
     Nothing    -> empty
-    Just artId -> maybe [] article_ <$> getArticleById artId
+    Just artId -> maybe [] (article_ aev fev) <$> getArticleById artId
 
-article_ :: HasMySQL u => Article -> [Resolver (GenHaxl u w)]
-article_ Article{..} =
-  [ scalar    "id"         artID
-  , scalar    "title"      artTitle
-  , scalar    "summary"    artSummary
-  , scalar    "content"    artContent
-  , scalar    "from_url"   artFromURL
-  , scalar    "tags"       artTags
-  , scalar    "timelines"  artTimelines
-  , object    "cover"      (maybe [] file_ artCover)
-  , value     "extra"      artExtra
-  , pickValue "pick_extra" artExtra
-  , scalar    "created_at" artCreatedAt
+article_ :: HasPSQL u => Value -> Value -> Article -> [Resolver (GenHaxl u w)]
+article_ aev fev Article{..} =
+  [ scalar "id"         artID
+  , scalar "title"      artTitle
+  , scalar "summary"    artSummary
+  , scalar "content"    artContent
+  , scalar "tags"       artTags
+  , scalar "timelines"  artTimelines
+  , object "cover"      (maybe [] (file_ fev) artCover)
+  , value  "extra"      (artExtra `union` aev)
+  , pick   "pick_extra" (artExtra `union` aev)
+  , scalar "created_at" artCreatedAt
   ]
 
-articles :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
+articles :: (HasPSQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 articles = arrayA' "articles" $ \ argv -> do
-  let from = fromMaybe 0  $ getIntValue "from" argv
-      size = fromMaybe 10 $ getIntValue "size" argv
+  fev <- getCache "file_extra"
+  aev <- getCache "article_extra"
 
-  map article_ <$> getArticleList from size (desc "id")
+  let from = fromMaybe 0  $ getInt "from" argv
+      size = fromMaybe 10 $ getInt "size" argv
 
-tag :: HasMySQL u => Resolver (GenHaxl u w)
+  map (article_ aev fev) <$> getArticleList from size (desc "id")
+
+tag :: HasPSQL u => Resolver (GenHaxl u w)
 tag = objectA' "tag" $ \argv -> do
-  let tagId = getIntValue "id" argv
-      name = getTextValue "name" argv
+  let tagId = getInt "id" argv
+      name = getText "name" argv
   case (tagId, name) of
     (Nothing, Nothing) -> empty
     (Just tagId', _)   -> maybe [] tag_ <$> getTagById tagId'
     (_, Just name')    -> maybe [] tag_ <$> getTagByName (unpack name')
 
-tag_ :: HasMySQL u => Tag -> [Resolver (GenHaxl u w)]
+tag_ :: HasPSQL u => Tag -> [Resolver (GenHaxl u w)]
 tag_ Tag{..} =
   [ scalar "id"         tagID
   , scalar "name"       tagName
   , scalar "created_at" tagCreatedAt
   ]
 
-timeline :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
+timeline :: (HasPSQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 timeline = arrayA' "timeline" $ \ argv -> do
-  let from = fromMaybe 0  $ getIntValue "from" argv
-      size = fromMaybe 10 $ getIntValue "size" argv
+  let from = fromMaybe 0  $ getInt "from" argv
+      size = fromMaybe 10 $ getInt "size" argv
 
-  case getTextValue "name" argv of
+  fev <- getCache "file_extra"
+  aev <- getCache "article_extra"
+
+  case getText "name" argv of
     Nothing   -> empty
     Just name ->
-      map article_ <$> getArticleListByTimeline (unpack name) from size (desc "art_id")
+      map (article_ aev fev) <$> getArticleListByTimeline (unpack name) from size (desc "art_id")
 
-articleCount :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
+articleCount :: (HasPSQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 articleCount = scalarA "article_count" $ \ case
   [] -> countArticle
   _  -> empty
 
-timelineCount :: (HasMySQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
+timelineCount :: (HasPSQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 timelineCount = scalarA "timeline_count" $ \ argv ->
-  case getTextValue "name" argv of
+  case getText "name" argv of
     Nothing   -> empty
     Just name -> countTimeline (unpack name)
 
-timelineMeta :: HasMySQL u => Resolver (GenHaxl u w)
+timelineMeta :: HasPSQL u => Resolver (GenHaxl u w)
 timelineMeta = objectA' "timeline_meta" $ \argv ->
-  case getTextValue "name" argv of
+  case getText "name" argv of
     Nothing   -> empty
     Just name -> maybe [] timelineMeta_ <$> getTimelineMeta (unpack name)
 

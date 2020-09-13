@@ -28,9 +28,9 @@ library
                      , Article.Types
                      , Article.Types.Internal
                      , Article.Types.Class
-                     , Article.Types.MySQL.File
-                     , Article.Types.MySQL.Tag
-                     , Article.Types.MySQL.Article
+                     , Article.Types.PSQL.File
+                     , Article.Types.PSQL.Tag
+                     , Article.Types.PSQL.Article
                      , Article.Types.CardItem
                      , Article.Router
                      , Article.Router.Handler
@@ -39,28 +39,23 @@ library
                      , Article.Config
                      , Article.GraphQL
   build-depends:       base >= 4.7 && <5.0
-                     , mysql-simple
                      , bytestring
                      , tagsoup
                      , resource-pool
                      , text
                      , haxl
                      , scotty
-                     , yuntan-common-config-mysql
-                     , yuntan-common-list-result
-                     , yuntan-common-order
-                     , yuntan-common-graphql
-                     , yuntan-common-scotty
-                     , yuntan-common-scotty-type
-                     , yuntan-common-json
-                     , yuntan-common-config-redis
-                     , yuntan-common-redis-caching
+                     , psql-utils
+                     , aeson-helper
+                     , rediscaching-haxl
+                     , scotty-haxl
+                     , scotty-utils
+                     , aeson-result
+                     , graphql-utils
                      , hedis
                      , aeson
                      , hashable
                      , unix-time
-                     , cryptohash
-                     , hex
                      , async
                      , filepath
                      , mtl
@@ -87,9 +82,8 @@ executable yuntan-article
                      , wai-extra
                      , yaml
                      , optparse-applicative
-                     , yuntan-common-config-mysql
-                     , yuntan-common-config-redis
-                     , yuntan-common-redis-caching
+                     , rediscaching-haxl
+                     , psql-utils
   default-language:    Haskell2010
 
 source-repository head
