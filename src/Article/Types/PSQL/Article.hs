@@ -29,6 +29,7 @@ data Article = Article
   , artContentJson :: Value
   , artCover       :: Maybe File
   , artTags        :: [TagName]
+  , artAliases     :: [Text]
   , artTimelines   :: [String]
   , artExtra       :: Value
   , artCreatedAt   :: CreatedAt
@@ -50,6 +51,7 @@ instance FromRow Article where
     artCreatedAt   <- field
     return Article
       { artTags         = []
+      , artAliases      = []
       , artTimelines    = []
       , artJsonContent  = False
       , artContentJson  = Null
@@ -64,6 +66,7 @@ instance ToJSON Article where
     , "summary"       .= artSummary
     , "content"       .= content
     , "tags"          .= artTags
+    , "aliases"       .= artAliases
     , "timelines"     .= artTimelines
     , "cover"         .= artCover
     , "extra"         .= artExtra
@@ -78,6 +81,7 @@ instance FromJSON Article where
     artSummary     <- o .: "summary"
     artContent     <- o .: "content"
     artTags        <- o .: "tags"
+    artAliases     <- o .: "aliases"
     artTimelines   <- o .: "timelines"
     artCover       <- o .: "cover"
     artExtra       <- o .: "extra"

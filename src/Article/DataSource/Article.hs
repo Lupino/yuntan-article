@@ -12,16 +12,25 @@ module Article.DataSource.Article
   , updateArticleTitle
   , updateArticleSummary
   , updateArticleContent
+
+  , saveAlias
+  , getAlias
+  , removeAlias
+  , getAllAlias
+  , removeAllAlias
   ) where
 
-import           Article.DataSource.Table (articles)
+import           Article.DataSource.Table (articleAlias, articles)
 import           Article.Types
 import           Control.Monad.IO.Class   (liftIO)
 import           Data.Aeson               (Value (..), encode)
 import           Data.Int                 (Int64)
+import           Data.Text                (Text)
 import           Data.UnixTime
 import           Database.PSQL.Types      (From, Only (..), OrderBy, PSQL, Size,
-                                           count_, delete, insertRet, selectOne,
+                                           count_, delete, insertOrUpdate,
+                                           insertRet, none, selectOne,
+                                           selectOneOnly, selectOnly,
                                            selectOnly_, update)
 
 createArticle :: Title -> Summary -> Content -> CreatedAt -> PSQL Int64
@@ -68,3 +77,18 @@ getArticleIdList = selectOnly_ articles "id"
 
 countArticle :: PSQL Int64
 countArticle = count_ articles
+
+saveAlias :: Text -> ID -> PSQL Int64
+saveAlias alias aid = insertOrUpdate articleAlias ["alias"] ["id"] [] (alias, aid)
+
+removeAlias :: Text -> PSQL Int64
+removeAlias alias = delete articleAlias "alias = ?" (Only alias)
+
+removeAllAlias :: ID -> PSQL Int64
+removeAllAlias aid = delete articleAlias "id = ?" (Only aid)
+
+getAllAlias :: ID -> PSQL [Text]
+getAllAlias aid = selectOnly articleAlias "alias" "id = ?" (Only aid) 0 100 none
+
+getAlias :: Text -> PSQL (Maybe ID)
+getAlias alias = selectOneOnly articleAlias "id" "alias = ?" (Only alias)

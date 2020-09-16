@@ -3,6 +3,7 @@
 module Article.Router.Handler
   ( saveFileHandler
   , getFileHandler
+  , removeFileHandler
   , createArticleHandler
   , updateArticleHandler
   , updateArticleCoverHandler
@@ -14,6 +15,10 @@ module Article.Router.Handler
   , getArticleHandler
   , getArticleExtraHandler
   , getAllArticleHandler
+
+  , removeAliasHandler
+  , saveAliasHandler
+  , checkAliasHandler
 
   , createTagHandler
   , getTagHandler
@@ -66,6 +71,16 @@ getFileHandler = do
   key <- param "key"
   file <- lift $ getFileWithKey key
   maybeNotFound "File" file
+
+removeFileHandler :: (HasPSQL u, HasOtherEnv Cache u) => ActionH u w ()
+removeFileHandler = do
+  key <- param "key"
+  file <- lift $ getFileWithKey key
+  case file of
+    Nothing -> resultOK
+    Just f -> do
+      void $ lift $ removeFile (fileID f)
+      resultOK
 
 createArticleHandler :: (HasPSQL u, HasOtherEnv Cache u) => ActionH u w ()
 createArticleHandler = do
@@ -140,6 +155,7 @@ removeArticleHandler = do
   lift . void $ removeArticle artId
   lift . void $ removeAllArticleTag artId
   lift . void $ removeTimelineListById artId
+  lift . void $ removeAllAlias artId
 
   resultOK
 
@@ -156,6 +172,24 @@ getAllArticleHandler :: (HasPSQL u, HasOtherEnv Cache u) => ActionH u w ()
 getAllArticleHandler = do
   result <- articles
   resultArticle result
+
+checkAliasHandler :: (HasPSQL u, HasOtherEnv Cache u) => ActionH u w ()
+checkAliasHandler = do
+  alias <- param "alias"
+  r <- lift $ fromMaybe 0 <$> getAlias alias
+  json $ object [ "id" .= r ]
+
+saveAliasHandler :: (HasPSQL u, HasOtherEnv Cache u) => Article -> ActionH u w ()
+saveAliasHandler Article{artID = aid} = do
+  alias <- param "alias"
+  void $ lift $ saveAlias alias aid
+  resultOK
+
+removeAliasHandler :: (HasPSQL u, HasOtherEnv Cache u) => ActionH u w ()
+removeAliasHandler = do
+  alias <- param "alias"
+  void $ lift $ removeAlias alias
+  resultOK
 
 createTagHandler :: HasPSQL u => ActionH u w ()
 createTagHandler = do

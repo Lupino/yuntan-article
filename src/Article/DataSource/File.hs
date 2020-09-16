@@ -4,6 +4,7 @@ module Article.DataSource.File
   , saveFileWithExtra
   , getFile
   , getFileWithKey
+  , removeFile
   ) where
 
 import           Article.DataSource.Table (files)
@@ -11,9 +12,10 @@ import           Article.Types
 import           Control.Monad            (void)
 import           Control.Monad.IO.Class   (liftIO)
 import           Data.Aeson               (encode)
+import           Data.Int                 (Int64)
 import           Data.UnixTime            (getUnixTime, toEpochTime)
-import           Database.PSQL.Types      (Only (..), PSQL, insertOrUpdate,
-                                           selectOne)
+import           Database.PSQL.Types      (Only (..), PSQL, delete,
+                                           insertOrUpdate, selectOne)
 
 getFile :: ID -> PSQL (Maybe File)
 getFile fid =
@@ -36,3 +38,6 @@ saveFileWithExtra bucket key extra = do
   void $ insertOrUpdate files ["key"] [] ["bucket", "extra", "created_at"]
     (key, bucket, encode extra, show $ toEpochTime t)
   getFileWithKey key
+
+removeFile :: ID -> PSQL Int64
+removeFile fid = delete files "id = ?" (Only fid)

@@ -24,6 +24,7 @@ import           Data.Aeson                  (Value (..))
 import           Data.Hashable               (Hashable (..))
 import           Data.Int                    (Int64)
 import           Data.Pool                   (withResource)
+import           Data.Text                   (Text)
 import           Data.Typeable               (Typeable)
 import           Database.PSQL.Types         (Connection, From, HasPSQL,
                                               OrderBy, PSQL, Size, TablePrefix,
@@ -53,6 +54,7 @@ data ArticleReq a where
   SaveFileWithExtra    :: FileBucket -> FileKey -> FileExtra -> ArticleReq (Maybe File)
   GetFileWithKey       :: FileKey -> ArticleReq (Maybe File)
   GetFileById          :: ID -> ArticleReq (Maybe File)
+  RemoveFile           :: ID -> ArticleReq Int64
 
   AddTag               :: TagName -> ArticleReq ID
   GetTagById           :: ID -> ArticleReq (Maybe Tag)
@@ -66,9 +68,9 @@ data ArticleReq a where
 
   AddTimeline              :: String -> ID -> ArticleReq ID
   RemoveTimeline           :: String -> ID -> ArticleReq Int64
-  RemoveTimelineList        :: String -> ArticleReq Int64
-  RemoveTimelineListById :: ID -> ArticleReq Int64
-  GetIdListByTimeline           :: String -> From -> Size -> OrderBy -> ArticleReq [ID]
+  RemoveTimelineList       :: String -> ArticleReq Int64
+  RemoveTimelineListById   :: ID -> ArticleReq Int64
+  GetIdListByTimeline      :: String -> From -> Size -> OrderBy -> ArticleReq [ID]
   CountTimeline            :: String -> ArticleReq Int64
   GetTimelineListById      :: ID -> ArticleReq [String]
   SaveTimelineMeta         :: String -> Title -> Summary -> ArticleReq Int64
@@ -77,49 +79,62 @@ data ArticleReq a where
 
   MergeData                :: ArticleReq ()
 
+  GetAlias       :: Text -> ArticleReq (Maybe ID)
+  GetAllAlias    :: ID -> ArticleReq [Text]
+  RemoveAllAlias :: ID -> ArticleReq Int64
+  RemoveAlias    :: Text -> ArticleReq Int64
+  SaveAlias      :: Text -> ID -> ArticleReq Int64
+
   deriving (Typeable)
 
 deriving instance Eq (ArticleReq a)
 instance Hashable (ArticleReq a) where
-  hashWithSalt s (CreateArticle a b c e)      = hashWithSalt s (0::Int, a, b, c, e)
-  hashWithSalt s (GetArticleById a)           = hashWithSalt s (1::Int, a)
-  hashWithSalt s (UpdateArticle a b c d)      = hashWithSalt s (2::Int, a, b, c, d)
-  hashWithSalt s (UpdateArticleTitle a b)     = hashWithSalt s (3::Int, a, b)
-  hashWithSalt s (UpdateArticleSummary a b)   = hashWithSalt s (4::Int, a, b)
-  hashWithSalt s (UpdateArticleContent a b)   = hashWithSalt s (5::Int, a, b)
-  hashWithSalt s (UpdateArticleCover a b)     = hashWithSalt s (6::Int, a, b)
-  hashWithSalt s (UpdateArticleExtra a b)     = hashWithSalt s (7::Int, a, b)
-  hashWithSalt s (GetArticleIdList a b c)     = hashWithSalt s (8::Int, a, b, c)
-  hashWithSalt s CountArticle                 = hashWithSalt s (9::Int)
-  hashWithSalt s (RemoveArticle a)            = hashWithSalt s (10::Int, a)
+  hashWithSalt s (CreateArticle a b c e)       = hashWithSalt s (0::Int, a, b, c, e)
+  hashWithSalt s (GetArticleById a)            = hashWithSalt s (1::Int, a)
+  hashWithSalt s (UpdateArticle a b c d)       = hashWithSalt s (2::Int, a, b, c, d)
+  hashWithSalt s (UpdateArticleTitle a b)      = hashWithSalt s (3::Int, a, b)
+  hashWithSalt s (UpdateArticleSummary a b)    = hashWithSalt s (4::Int, a, b)
+  hashWithSalt s (UpdateArticleContent a b)    = hashWithSalt s (5::Int, a, b)
+  hashWithSalt s (UpdateArticleCover a b)      = hashWithSalt s (6::Int, a, b)
+  hashWithSalt s (UpdateArticleExtra a b)      = hashWithSalt s (7::Int, a, b)
+  hashWithSalt s (GetArticleIdList a b c)      = hashWithSalt s (8::Int, a, b, c)
+  hashWithSalt s CountArticle                  = hashWithSalt s (9::Int)
+  hashWithSalt s (RemoveArticle a)             = hashWithSalt s (10::Int, a)
 
-  hashWithSalt s (SaveFile a b)               = hashWithSalt s (11::Int, a, b)
-  hashWithSalt s (SaveFileWithExtra a b c)    = hashWithSalt s (12::Int, a, b, c)
-  hashWithSalt s (GetFileWithKey a)           = hashWithSalt s (13::Int, a)
-  hashWithSalt s (GetFileById a)              = hashWithSalt s (14::Int, a)
+  hashWithSalt s (SaveFile a b)                = hashWithSalt s (11::Int, a, b)
+  hashWithSalt s (SaveFileWithExtra a b c)     = hashWithSalt s (12::Int, a, b, c)
+  hashWithSalt s (GetFileWithKey a)            = hashWithSalt s (13::Int, a)
+  hashWithSalt s (GetFileById a)               = hashWithSalt s (14::Int, a)
+  hashWithSalt s (RemoveFile a)                = hashWithSalt s (15::Int, a)
 
-  hashWithSalt s (AddTag a)                   = hashWithSalt s (17::Int, a)
-  hashWithSalt s (GetTagById a)               = hashWithSalt s (18::Int, a)
-  hashWithSalt s (GetTagByName a)             = hashWithSalt s (19::Int, a)
-  hashWithSalt s (GetTags a b c)              = hashWithSalt s (20::Int, a, b, c)
-  hashWithSalt s (UpdateTag a b)              = hashWithSalt s (21::Int, a, b)
-  hashWithSalt s (AddArticleTag a b)          = hashWithSalt s (22::Int, a, b)
-  hashWithSalt s (RemoveArticleTag a b)       = hashWithSalt s (23::Int, a, b)
-  hashWithSalt s (RemoveAllArticleTag a)      = hashWithSalt s (24::Int, a)
-  hashWithSalt s (GetAllArticleTagName a)     = hashWithSalt s (25::Int, a)
+  hashWithSalt s (AddTag a)                    = hashWithSalt s (17::Int, a)
+  hashWithSalt s (GetTagById a)                = hashWithSalt s (18::Int, a)
+  hashWithSalt s (GetTagByName a)              = hashWithSalt s (19::Int, a)
+  hashWithSalt s (GetTags a b c)               = hashWithSalt s (20::Int, a, b, c)
+  hashWithSalt s (UpdateTag a b)               = hashWithSalt s (21::Int, a, b)
+  hashWithSalt s (AddArticleTag a b)           = hashWithSalt s (22::Int, a, b)
+  hashWithSalt s (RemoveArticleTag a b)        = hashWithSalt s (23::Int, a, b)
+  hashWithSalt s (RemoveAllArticleTag a)       = hashWithSalt s (24::Int, a)
+  hashWithSalt s (GetAllArticleTagName a)      = hashWithSalt s (25::Int, a)
 
-  hashWithSalt s (AddTimeline a b)            = hashWithSalt s (26::Int, a, b)
-  hashWithSalt s (RemoveTimeline a b)         = hashWithSalt s (27::Int, a, b)
+  hashWithSalt s (AddTimeline a b)             = hashWithSalt s (26::Int, a, b)
+  hashWithSalt s (RemoveTimeline a b)          = hashWithSalt s (27::Int, a, b)
   hashWithSalt s (RemoveTimelineList a)        = hashWithSalt s (28::Int, a)
-  hashWithSalt s (RemoveTimelineListById a) = hashWithSalt s (29::Int, a)
-  hashWithSalt s (GetIdListByTimeline a b c d)     = hashWithSalt s (30::Int, a, b, c, d)
-  hashWithSalt s (GetTimelineListById a)    = hashWithSalt s (31::Int, a)
-  hashWithSalt s (CountTimeline a)            = hashWithSalt s (32::Int, a)
-  hashWithSalt s (SaveTimelineMeta a b c)     = hashWithSalt s (33::Int, a, b, c)
-  hashWithSalt s (RemoveTimelineMeta a)       = hashWithSalt s (34::Int, a)
-  hashWithSalt s (GetTimelineMeta a)          = hashWithSalt s (35::Int, a)
+  hashWithSalt s (RemoveTimelineListById a)    = hashWithSalt s (29::Int, a)
+  hashWithSalt s (GetIdListByTimeline a b c d) = hashWithSalt s (30::Int, a, b, c, d)
+  hashWithSalt s (GetTimelineListById a)       = hashWithSalt s (31::Int, a)
+  hashWithSalt s (CountTimeline a)             = hashWithSalt s (32::Int, a)
+  hashWithSalt s (SaveTimelineMeta a b c)      = hashWithSalt s (33::Int, a, b, c)
+  hashWithSalt s (RemoveTimelineMeta a)        = hashWithSalt s (34::Int, a)
+  hashWithSalt s (GetTimelineMeta a)           = hashWithSalt s (35::Int, a)
 
-  hashWithSalt s MergeData                    = hashWithSalt s (36::Int)
+  hashWithSalt s MergeData                     = hashWithSalt s (36::Int)
+
+  hashWithSalt s (GetAlias a)       = hashWithSalt s (37::Int, a)
+  hashWithSalt s (GetAllAlias a)    = hashWithSalt s (38::Int, a)
+  hashWithSalt s (RemoveAllAlias a) = hashWithSalt s (39::Int, a)
+  hashWithSalt s (RemoveAlias a)    = hashWithSalt s (40::Int, a)
+  hashWithSalt s (SaveAlias a b)    = hashWithSalt s (41::Int, a, b)
 
 
 deriving instance Show (ArticleReq a)
@@ -181,6 +196,7 @@ fetchReq (SaveFile path fc)                = saveFile path fc
 fetchReq (SaveFileWithExtra path fc extra) = saveFileWithExtra path fc extra
 fetchReq (GetFileWithKey key)              = getFileWithKey key
 fetchReq (GetFileById fileId)              = getFile fileId
+fetchReq (RemoveFile fileId)               = removeFile fileId
 
 fetchReq (AddTag name)                     = addTag name
 fetchReq (GetTagById tid)                  = getTagById tid
@@ -204,6 +220,12 @@ fetchReq (RemoveTimelineMeta name)         = removeTimelineMeta name
 fetchReq (GetTimelineMeta name)            = getTimelineMeta name
 
 fetchReq MergeData                         = mergeData
+
+fetchReq (GetAlias a)                      = getAlias a
+fetchReq (GetAllAlias a)                   = getAllAlias a
+fetchReq (RemoveAllAlias a)                = removeAllAlias a
+fetchReq (RemoveAlias a)                   = removeAlias a
+fetchReq (SaveAlias a b)                   = saveAlias a b
 
 initArticleState :: Int -> State ArticleReq
 initArticleState = ArticleState

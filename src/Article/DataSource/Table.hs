@@ -6,6 +6,7 @@ module Article.DataSource.Table
   -- tables
   , articles
   , articleTag
+  , articleAlias
   , files
   , tags
   , timeline
@@ -23,6 +24,9 @@ articles = "articles"
 
 articleTag :: TableName
 articleTag = "article_tag"
+
+articleAlias :: TableName
+articleAlias = "article_alias"
 
 files :: TableName
 files = "files"
@@ -46,6 +50,13 @@ createArticleTagTable = do
     , constraintPrimaryKey prefix articleTag ["art_id", "tag_id"]
     ]
 
+createArticleAliasTable :: PSQL Int64
+createArticleAliasTable =
+  createTable articleAlias
+    [ "alias VARCHAR(128) PRIMARY KEY"
+    , "id INT NOT NULL"
+    ]
+
 
 createArticleTable :: PSQL Int64
 createArticleTable =
@@ -54,8 +65,6 @@ createArticleTable =
     , "title VARCHAR(150) NOT NULL"
     , "summary VARCHAR(1500) NOT NULL"
     , "content TEXT"
-    -- , "from_url VARCHAR(255) NOT NULL"
-    -- , "from_url_hash VARCHAR(128) NOT NULL"
     , "cover JSON"
     , "extra JSON"
     , "created_at INT DEFAULT '0'"
@@ -111,6 +120,9 @@ versionList =
         , createTimelineTable
         , createIndex True timeline "name_art_id" ["name", "art_id"]
         , createTimelineMetaTable
+        ])
+  , (2, [ createArticleAliasTable
+        , createIndex False articleAlias "id" ["id"]
         ])
   ]
 

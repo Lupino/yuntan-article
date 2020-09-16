@@ -74,6 +74,9 @@ def get_file(key):
 def save_file(key, bucket = 'upload', extra = ''):
     return run_post('file/{}'.format(key), {'bucket': bucket, 'extra': extra})
 
+def delete_file(key):
+    return run_delete('file/{}'.format(key))
+
 def create_tag(tag):
     return run_post('tags', {'tag': tag})
 
@@ -119,6 +122,16 @@ def graphql(query, file_extra={}, article_extra = {}):
         'file_extra': json.dumps(file_extra),
         'article_extra': json.dumps(article_extra)
     })
+
+
+def save_alias(aid, alias):
+    return run_post('articles/{}/alias'.format(aid), {'alias': alias})
+
+def remove_alias(alias):
+    return run_delete('alias/{}'.format(alias))
+
+def check_alias(alias):
+    return run_get('alias/{}'.format(alias))
 
 def main():
     title = 'test title'
@@ -243,6 +256,24 @@ def main():
     ret = get_article(aid)
     check_equal(ret['article']['extra'], None)
 
+    save_alias(aid, 'alias')
+
+    ret = check_alias('alias')
+    check_equal(ret['id'], aid)
+
+
+    ret = get_article('alias')
+    check_equal(ret['article']['aliases'], ['alias'])
+    check_equal(ret['article']['id'], aid)
+
+    remove_alias('alias')
+
+    ret = check_alias('alias')
+    check_equal(ret['id'], 0)
+
+    ret = get_article(aid)
+    check_equal(ret['article']['aliases'], [])
+
     ret = get_articles('card')
     check_equal(len(ret['cards']), ret['total'])
 
@@ -268,5 +299,6 @@ def main():
 
     ret = graphql('{file(key: "file_key") { extra {test }}}', file_extra={'test': 'def'})
     check_equal(ret['data']['file']['extra']['test'], 'def')
+    delete_file(file_key)
 
 main()

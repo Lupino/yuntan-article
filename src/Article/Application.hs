@@ -17,6 +17,7 @@ application mids = do
   mapM_ middleware mids
 
   post   "/api/articles/"                    createArticleHandler
+  get    "/api/articles/"                    getAllArticleHandler
   post   "/api/articles/:art_id/"            $ requireArticle updateArticleHandler
   post   "/api/articles/:art_id/cover"       $ requireArticle updateArticleCoverHandler
   delete "/api/articles/:art_id/cover"       $ requireArticle removeArticleCoverHandler
@@ -27,7 +28,10 @@ application mids = do
   delete "/api/articles/:art_id/"            removeArticleHandler
   get    "/api/articles/:art_id/"            $ requireArticle getArticleHandler
   get    "/api/articles/:art_id/graphql/"    $ requireArticle graphqlByArticleHandler
-  get    "/api/articles/"                    getAllArticleHandler
+
+  post   "/api/articles/:art_id/alias"       $ requireArticle saveAliasHandler
+  delete "/api/alias/:alias"                 removeAliasHandler
+  get    "/api/alias/:alias"                 checkAliasHandler
 
   get    "/api/tags/:tag_id/"                $ requireTag getTagHandler
   post   "/api/tags/"                        createTagHandler
@@ -47,5 +51,6 @@ application mids = do
 
   get    "/api/file/:key"                    getFileHandler
   post   "/api/file/:key"                    saveFileHandler
+  delete "/api/file/:key"                    removeFileHandler
 
   post "/api/graphql/"                       graphqlHandler

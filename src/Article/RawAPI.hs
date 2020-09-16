@@ -16,6 +16,7 @@ module Article.RawAPI
   , saveFileWithExtra
   , getFileWithKey
   , getFileById
+  , removeFile
 
   , addTag
   , getTagById
@@ -38,12 +39,19 @@ module Article.RawAPI
   , removeTimelineMeta
   , getTimelineMeta
   , mergeData
+
+  , saveAlias
+  , getAlias
+  , removeAlias
+  , getAllAlias
+  , removeAllAlias
   ) where
 
 import           Article.DataSource  (ArticleReq (..))
 import           Article.Types
 import           Data.Aeson          (Value)
 import           Data.Int            (Int64)
+import           Data.Text           (Text)
 import           Database.PSQL.Types (From, HasPSQL, OrderBy, Size)
 import           Haxl.Core           (GenHaxl, dataFetch, uncachedRequest)
 
@@ -94,6 +102,9 @@ getFileWithKey k = dataFetch (GetFileWithKey k)
 
 getFileById :: HasPSQL u => ID -> GenHaxl u w (Maybe File)
 getFileById fileId = dataFetch (GetFileById fileId)
+
+removeFile :: HasPSQL u => ID -> GenHaxl u w Int64
+removeFile fid = uncachedRequest (RemoveFile fid)
 
 addTag :: HasPSQL u => TagName -> GenHaxl u w ID
 addTag name = uncachedRequest (AddTag name)
@@ -155,3 +166,18 @@ getTimelineMeta name = dataFetch (GetTimelineMeta name)
 
 mergeData :: HasPSQL u => GenHaxl u w ()
 mergeData = uncachedRequest MergeData
+
+getAlias :: HasPSQL u => Text -> GenHaxl u w (Maybe ID)
+getAlias a = dataFetch (GetAlias a)
+
+getAllAlias :: HasPSQL u => ID -> GenHaxl u w [Text]
+getAllAlias a = dataFetch (GetAllAlias a)
+
+removeAllAlias :: HasPSQL u => ID -> GenHaxl u w Int64
+removeAllAlias a = uncachedRequest (RemoveAllAlias a)
+
+removeAlias :: HasPSQL u => Text -> GenHaxl u w Int64
+removeAlias a = uncachedRequest (RemoveAlias a)
+
+saveAlias :: HasPSQL u => Text -> ID -> GenHaxl u w Int64
+saveAlias a b = uncachedRequest (SaveAlias a b)

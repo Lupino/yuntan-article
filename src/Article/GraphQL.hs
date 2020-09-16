@@ -32,6 +32,7 @@ instance Alternative (GenHaxl u w) where
 --  type Query {
 --    file(key: String!): File
 --    article(id: Int!): Article
+--    article(alias: String!): Article
 --    articles(from: Int, size: Int): [Article]
 --    tag(id: Int!): Tag
 --    tag(name: String!): Tag
@@ -53,8 +54,8 @@ instance Alternative (GenHaxl u w) where
 --    title: String
 --    summary: String
 --    content: String
---    from_url: String
 --    tags: [String]
+--    aliases: [String]
 --    timelines: [String]
 --    cover: File
 --    extra: Value
@@ -101,7 +102,11 @@ article :: (HasPSQL u, HasOtherEnv Cache u) => Resolver (GenHaxl u w)
 article = objectA' "article" $ \argv -> do
   fev <- getCache "file_extra"
   aev <- getCache "article_extra"
-  case getInt "id" argv of
+  maid <- case getText "alias" argv of
+            Nothing    -> pure $ getInt "id" argv
+            Just alias -> getAlias alias
+
+  case maid of
     Nothing    -> empty
     Just artId -> maybe [] (article_ aev fev) <$> getArticleById artId
 
@@ -112,6 +117,7 @@ article_ aev fev Article{..} =
   , scalar "summary"    artSummary
   , scalar "content"    artContent
   , scalar "tags"       artTags
+  , scalar "aliases"    artAliases
   , scalar "timelines"  artTimelines
   , object "cover"      (maybe [] (file_ fev) artCover)
   , value  "extra"      (artExtra `union` aev)

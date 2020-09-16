@@ -35,6 +35,7 @@ import           JL.Interpreter         (desugar, eval, subst)
 import           JL.Parser              (parseText)
 import           JL.Serializer          (coreToValue, valueToExpression)
 import           JL.Types               (Expression (..))
+import           Text.Read              (readMaybe)
 import           Web.Scotty.Haxl        (ActionH)
 import           Web.Scotty.Trans       (param)
 import           Web.Scotty.Utils       (errNotFound, ok, safeParam)
@@ -88,12 +89,21 @@ article = do
 
 requireArticle :: (HasPSQL u, HasOtherEnv Cache u) => (Article -> ActionH u w ()) -> ActionH u w ()
 requireArticle action = do
-  artId <- param "art_id"
+  taid <- param "art_id"
 
-  art <- lift $ getArticleById artId
-  maybe (notFound artId) action art
+  case readMaybe taid of
+    Just aid -> do
+      art <- lift $ getArticleById aid
+      maybe (notFound taid) action art
+    Nothing -> do
+      maid <- lift $ getAlias (pack taid)
+      case maid of
+        Nothing -> notFound taid
+        Just aid -> do
+          art <- lift $ getArticleById aid
+          maybe (notFound taid) action art
 
-  where notFound artId = errNotFound $ concat [ "Article (", show artId, ") not found" ]
+  where notFound artId = errNotFound $ concat [ "Article (", artId, ") not found" ]
 
 requireTag :: HasPSQL u => (Tag -> ActionH u w ()) -> ActionH u w ()
 requireTag action = do

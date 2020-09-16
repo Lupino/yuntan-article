@@ -26,17 +26,24 @@ module Article.API
   , removeTimelineListById
   , getArticleListByTimeline
   , countTimeline
+
+  , saveAlias
+  , removeAllAlias
+  , removeAlias
+
   , module X
   ) where
 
 import           Article.Config      (Cache, redisEnv)
-import           Article.RawAPI      as X (addTag, getAllArticleTagName,
+import           Article.RawAPI      as X (addTag, getAlias,
+                                           getAllArticleTagName,
                                            getArticleIdList, getFileById,
                                            getFileWithKey, getTagById,
                                            getTagByName, getTimelineMeta,
-                                           mergeData, removeTimelineMeta,
-                                           saveFile, saveFileWithExtra,
-                                           saveTimelineMeta, updateTag)
+                                           mergeData, removeFile,
+                                           removeTimelineMeta, saveFile,
+                                           saveFileWithExtra, saveTimelineMeta,
+                                           updateTag)
 import qualified Article.RawAPI      as RawAPI
 import           Article.Types
 import           Article.Utils       (cleanHtml, firstImage)
@@ -45,6 +52,7 @@ import           Data.ByteString     (ByteString)
 import           Data.Int            (Int64)
 import           Data.Maybe          (catMaybes, isJust)
 import           Data.String         (fromString)
+import           Data.Text           (Text)
 import           Data.Traversable    (for)
 import           Database.PSQL.Types (From, HasOtherEnv, HasPSQL, OrderBy, Size)
 import           Haxl.Core           (GenHaxl)
@@ -89,6 +97,7 @@ fillArticle (Just art) =
   fmap Just
     $ fillAllTimeline
     =<< fillArticleCover
+    =<< fillAllAlias
     =<< fillAllTagName art
 
 updateArticle :: (HasPSQL u, HasOtherEnv Cache u) => ID -> Title -> Summary -> Content -> GenHaxl u w Int64
@@ -164,6 +173,19 @@ takeFileKey = takeWhile (/= '.') . takeFileName . takeWhile (/= '?')
 addArticleTag :: (HasPSQL u, HasOtherEnv Cache u) => ID -> ID -> GenHaxl u w ID
 addArticleTag aid tid  = unCacheArticle aid $ RawAPI.addArticleTag aid tid
 
+saveAlias :: (HasPSQL u, HasOtherEnv Cache u) => Text -> ID -> GenHaxl u w Int64
+saveAlias alias aid  = unCacheArticle aid $ RawAPI.saveAlias alias aid
+
+removeAlias :: (HasPSQL u, HasOtherEnv Cache u) => Text -> GenHaxl u w Int64
+removeAlias alias = do
+  maid <- getAlias alias
+  case maid of
+    Nothing  -> return 0
+    Just aid -> unCacheArticle aid $ RawAPI.removeAlias alias
+
+removeAllAlias  :: (HasPSQL u, HasOtherEnv Cache u) => ID -> GenHaxl u w Int64
+removeAllAlias aid  = unCacheArticle aid $ RawAPI.removeAllAlias aid
+
 removeArticleTag :: (HasPSQL u, HasOtherEnv Cache u) => ID -> ID -> GenHaxl u w Int64
 removeArticleTag aid tid = unCacheArticle aid $ RawAPI.removeArticleTag aid tid
 
@@ -174,6 +196,11 @@ fillAllTagName :: HasPSQL u => Article -> GenHaxl u w Article
 fillAllTagName art = do
   tags <- RawAPI.getAllArticleTagName $ artID art
   return $ art { artTags = tags }
+
+fillAllAlias :: HasPSQL u => Article -> GenHaxl u w Article
+fillAllAlias art = do
+  aliases <- RawAPI.getAllAlias $ artID art
+  return $ art { artAliases = aliases }
 
 addTimeline :: (HasPSQL u, HasOtherEnv Cache u) => String -> ID -> GenHaxl u w ID
 addTimeline name aid =
