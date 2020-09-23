@@ -27,6 +27,8 @@ module Article.RawAPI
   , removeArticleTag
   , removeAllArticleTag
   , getAllArticleTagName
+  , getArticleIdListByTag
+  , countArticleByTag
 
   , addTimeline
   , removeTimeline
@@ -132,6 +134,12 @@ removeAllArticleTag aid = uncachedRequest (RemoveAllArticleTag aid)
 
 getAllArticleTagName :: HasPSQL u => ID -> GenHaxl u w [TagName]
 getAllArticleTagName aid = dataFetch (GetAllArticleTagName aid)
+
+getArticleIdListByTag :: HasPSQL u => ID -> From -> Size -> OrderBy -> GenHaxl u w [ID]
+getArticleIdListByTag tid f s o = dataFetch (GetArticleIdListByTag tid f s o)
+
+countArticleByTag :: HasPSQL u => ID -> GenHaxl u w Int64
+countArticleByTag tid = dataFetch (CountArticleByTag tid)
 
 addTimeline :: HasPSQL u => String -> ID -> GenHaxl u w ID
 addTimeline name aid = uncachedRequest (AddTimeline name aid)

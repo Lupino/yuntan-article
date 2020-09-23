@@ -59,9 +59,15 @@ timeline name = articles' s t
         t = countTimeline name
 
 articles :: (HasPSQL u, HasOtherEnv Cache u) => ActionH u w (List Article)
-articles = articles' s t
+articles = do
+  mtag <- apiTag
+  case mtag of
+    Nothing  -> articles' s t
+    Just tag -> articles' (s1 tag) (t1 tag)
   where s = flip' getArticleList $ desc "id"
         t = countArticle
+        s1 tag = flip' (getArticleListByTag $ tagID tag) $ desc "art_id"
+        t1 tag = countArticleByTag $ tagID tag
 
 flip' :: (a -> b -> c -> d) -> c -> a -> b -> d
 flip' f = g
@@ -105,14 +111,18 @@ requireArticle action = do
 
   where notFound artId = errNotFound $ concat [ "Article (", artId, ") not found" ]
 
-requireTag :: HasPSQL u => (Tag -> ActionH u w ()) -> ActionH u w ()
-requireTag action = do
+apiTag :: HasPSQL u => ActionH u w (Maybe Tag)
+apiTag = do
   tid <- safeParam "tag_id" (0::ID)
   name <- safeParam "tag" (""::String)
 
-  tag <- lift $
+  lift $
     if tid > 0 then getTagById tid
                else getTagByName name
+
+requireTag :: HasPSQL u => (Tag -> ActionH u w ()) -> ActionH u w ()
+requireTag action = do
+  tag <- apiTag
 
   maybe notFound action tag
   where notFound = errNotFound "Not Found."

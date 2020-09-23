@@ -20,6 +20,7 @@ module Article.API
   , addArticleTag
   , removeArticleTag
   , removeAllArticleTag
+  , getArticleListByTag
 
   , addTimeline
   , removeTimeline
@@ -35,7 +36,7 @@ module Article.API
   ) where
 
 import           Article.Config      (Cache, redisEnv)
-import           Article.RawAPI      as X (addTag, getAlias,
+import           Article.RawAPI      as X (addTag, countArticleByTag, getAlias,
                                            getAllArticleTagName,
                                            getArticleIdList, getFileById,
                                            getFileWithKey, getTagById,
@@ -232,3 +233,10 @@ fillAllTimeline :: HasPSQL u => Article -> GenHaxl u w Article
 fillAllTimeline art = do
   timelines <- RawAPI.getTimelineListById $ artID art
   return $ art { artTimelines = timelines }
+
+getArticleListByTag
+  :: (HasPSQL u, HasOtherEnv Cache u)
+  => ID -> From -> Size -> OrderBy -> GenHaxl u w [Article]
+getArticleListByTag tid f s o = do
+  aids <- RawAPI.getArticleIdListByTag tid f s o
+  catMaybes <$> for aids getArticleById

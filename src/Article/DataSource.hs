@@ -65,6 +65,8 @@ data ArticleReq a where
   RemoveArticleTag     :: ID -> ID -> ArticleReq Int64
   RemoveAllArticleTag  :: ID -> ArticleReq Int64
   GetAllArticleTagName :: ID -> ArticleReq [TagName]
+  GetArticleIdListByTag :: ID -> From -> Size -> OrderBy -> ArticleReq [ID]
+  CountArticleByTag     :: ID -> ArticleReq Int64
 
   AddTimeline              :: String -> ID -> ArticleReq ID
   RemoveTimeline           :: String -> ID -> ArticleReq Int64
@@ -116,6 +118,8 @@ instance Hashable (ArticleReq a) where
   hashWithSalt s (RemoveArticleTag a b)        = hashWithSalt s (23::Int, a, b)
   hashWithSalt s (RemoveAllArticleTag a)       = hashWithSalt s (24::Int, a)
   hashWithSalt s (GetAllArticleTagName a)      = hashWithSalt s (25::Int, a)
+  hashWithSalt s (GetArticleIdListByTag a b c d) = hashWithSalt s (42::Int, a, b, c, d)
+  hashWithSalt s (CountArticleByTag a)         = hashWithSalt s (43::Int, a)
 
   hashWithSalt s (AddTimeline a b)             = hashWithSalt s (26::Int, a, b)
   hashWithSalt s (RemoveTimeline a b)          = hashWithSalt s (27::Int, a, b)
@@ -207,6 +211,8 @@ fetchReq (AddArticleTag aid tid)           = addArticleTag aid tid
 fetchReq (RemoveArticleTag aid tid)        = removeArticleTag aid tid
 fetchReq (RemoveAllArticleTag aid)         = removeAllArticleTag aid
 fetchReq (GetAllArticleTagName aid)        = getAllArticleTagName aid
+fetchReq (GetArticleIdListByTag a b c d)   = getArticleIdListByTag a b c d
+fetchReq (CountArticleByTag a)             = countArticleByTag a
 
 fetchReq (AddTimeline name aid)            = addTimeline name aid
 fetchReq (RemoveTimeline name aid)         = removeTimeline name aid

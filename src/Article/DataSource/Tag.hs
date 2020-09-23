@@ -10,6 +10,8 @@ module Article.DataSource.Tag
   , removeArticleTag
   , removeAllArticleTag
   , getAllArticleTagName
+  , getArticleIdListByTag
+  , countArticleByTag
   ) where
 
 import           Article.DataSource.Table (articleTag, tags)
@@ -18,7 +20,7 @@ import           Control.Monad.IO.Class   (liftIO)
 import           Data.Int                 (Int64)
 import           Data.UnixTime
 import           Database.PSQL.Types      (From, Only (..), OrderBy, PSQL, Size,
-                                           as, delete, insertOrUpdate,
+                                           as, count, delete, insertOrUpdate,
                                            insertRet, join, none, selectOne,
                                            selectOnly, select_, update)
 import           Prelude                  hiding (id)
@@ -59,3 +61,9 @@ removeArticleTag aid tid =
 removeAllArticleTag :: ID -> PSQL Int64
 removeAllArticleTag aid =
   delete articleTag "art_id = ? " (Only aid)
+
+getArticleIdListByTag :: ID -> From -> Size -> OrderBy -> PSQL [ID]
+getArticleIdListByTag tid = selectOnly articleTag "id" "tag_id = ?" (Only tid)
+
+countArticleByTag :: ID -> PSQL Int64
+countArticleByTag tid = count articleTag "tag_id = ?" (Only tid)
