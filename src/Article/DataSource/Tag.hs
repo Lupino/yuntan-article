@@ -63,7 +63,7 @@ removeAllArticleTag aid =
   delete articleTag "art_id = ? " (Only aid)
 
 getArticleIdListByTag :: ID -> From -> Size -> OrderBy -> PSQL [ID]
-getArticleIdListByTag tid = selectOnly articleTag "id" "tag_id = ?" (Only tid)
+getArticleIdListByTag tid = selectOnly articleTag "art_id" "tag_id = ?" (Only tid)
 
 countArticleByTag :: ID -> PSQL Int64
 countArticleByTag tid = count articleTag "tag_id = ?" (Only tid)
